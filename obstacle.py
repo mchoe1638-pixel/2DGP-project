@@ -12,6 +12,7 @@ import fx
 import game_framework
 import game_world
 import resource
+import sound
 from camera import Camera
 from fx import SpriteLookup
 from game_object import GameObject
@@ -60,6 +61,7 @@ class Npc(GameObject):
         if group != PLAYER_OBSTACLE or other is not self.player or not self.active:
             return
         self.active = False
+        sound.play_sfx(sound.BUMP)
         # 효과가 걸리면 플레이어는 기절해서 달리는 중이 아니게 되므로, 달렸는지는 먼저 본다
         was_running = self.player.is_running()
         self.affect(self.player)
@@ -167,6 +169,7 @@ class Boss(Npc):
         self.phase = BossPhase.TALK
         player.stun(config.BOSS_STOP_TIME)
         player.gauge.add(config.BOSS_GAUGE_ADD)
+        sound.play_sfx(sound.BOSS_TALK)
         fx.spawn_speech(
             self,
             self.camera,
@@ -188,6 +191,7 @@ class Boss(Npc):
         if abs(self.x - self.player.x) >= config.BOSS_WARN_DISTANCE:
             return
         fx.spawn_exclaim(config.BOSS_EXCLAIM_TIME, self._lookup)
+        sound.play_sfx(sound.WARNING)
         self._warn_left = config.BOSS_EXCLAIM_TIME
         self.phase = BossPhase.WARN
 

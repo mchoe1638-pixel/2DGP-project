@@ -10,7 +10,12 @@
 
 ESC → 타이틀, 창 닫기 → 종료, 디버그 키 F1~F4·G → 게이지 조작, B → 충돌 상자 표시.
 나머지 입력은 플레이어가 받는다 (골인한 뒤에는 받지 않는다).
+
+소리는 게이지 단계가 바뀔 때의 배경음 전환, 꾸르륵, 한계 단계의 심장박동, 성공·실패음을 여기서 맡는다.
+(점프·충돌·아이템 같은 효과음은 그 일이 일어나는 쪽에서 낸다.)
 """
+
+from functools import partial
 
 from pico2d import (
     SDL_KEYDOWN,
@@ -34,11 +39,13 @@ import game_world
 import gfx
 import level
 import result_mode  # 순환 import지만 서로를 호출 시점에 모듈 속성으로만 쓰므로 안전하다
+import sound
 import stage_data
 import title_mode  # 위와 같은 이유로 안전하다
 from background import Floor, ParallaxLayer
 from camera import Camera
-from gauge import Gauge
+from gauge import Gauge, GaugeStage
+from hud import Hud
 from item import PLAYER_ITEM
 from obstacle import PLAYER_OBSTACLE
 from player import Player
@@ -60,14 +67,27 @@ camera: Camera
 gauge: Gauge
 player: Player
 door: WcDoor
+hud: Hud
 elapsed = 0.0  # 이번 판에서 달린 시간(초). 골인한 뒤에는 흐르지 않는다
 # 골인한 뒤 결과 화면까지 남은 시간(초). None이면 아직 달리는 중
 goal_countdown: float | None = None
 show_bb = False  # 충돌 상자를 그릴지 (화면에 들어올 때마다 꺼진 채로 시작한다)
 
 
+def music_for(level_of_gauge: GaugeStage) -> str:
+    """게이지 단계에 맞는 배경음: 긴장 단계(80%~)부터는 긴장된 곡."""
+    if level_of_gauge >= GaugeStage.STRAIN:
+        return sound.BGM_TENSE
+    return sound.BGM_NORMAL
+
+
+def switch_music(old: GaugeStage, new: GaugeStage) -> None:
+    """게이지 단계가 바뀔 때 곡을 맞춘다. 같은 곡이면 sound가 그대로 둔다."""
+    sound.play_bgm(music_for(new))
+
+
 def init() -> None:
-    global stage, camera, gauge, player, elapsed, goal_countdown, show_bb
+    global stage, camera, gauge, player, hud, elapsed, goal_countdown, show_bb
     game_world.clear()
     show_bb = False
     elapsed = 0.0
@@ -75,7 +95,10 @@ def init() -> None:
     stage = stage_data.get_stage(2)
     camera = Camera(config.SCREEN_W, stage.length)
     gauge = Gauge(config.GAUGE_BASE_RATE[stage.number])
+    gauge.on_stage_change(switch_music)
+    gauge.on_growl(partial(sound.play_sfx, sound.GROWL))
     player = Player(stage, camera, gauge=gauge)
+    hud = Hud(stage, gauge, player)
     camera.snap_to(player.x)
     background = game_world.LAYER_BACKGROUND
     game_world.add_object(
@@ -89,6 +112,7 @@ def init() -> None:
     place_props()
     place_items()
     place_obstacles()
+    sound.play_bgm(music_for(gauge.stage))
 
 
 def place_props() -> None:
@@ -116,7 +140,14 @@ def place_obstacles() -> None:
         game_world.add_collision_pair(PLAYER_OBSTACLE, None, obstacle)
 
 
+def silence_music() -> None:
+    """배경음과 심장박동을 멈춘다. 이미 울리기 시작한 효과음(성공·실패음 포함)은 끝까지 울린다."""
+    sound.stop_bgm()
+    sound.stop_heartbeat()
+
+
 def finish() -> None:
+    silence_music()
     game_world.clear()
 
 
@@ -167,6 +198,15 @@ def start_goal_sequence() -> None:
     door.open()
     player.release_keys()
     goal_countdown = config.GOAL_RESULT_DELAY
+    silence_music()
+    sound.play_sfx(sound.CLEAR)
+
+
+def fail_run() -> None:
+    """실패음을 울리고 곧바로 결과 화면으로 넘어간다 (그 뒤는 정적)."""
+    silence_music()
+    sound.play_sfx(sound.FAIL)
+    finish_run(cleared=False)
 
 
 def check_run_end() -> None:
@@ -175,7 +215,7 @@ def check_run_end() -> None:
     같은 프레임에 둘이 겹치면 실패가 먼저다 (게이지는 플레이어가 움직이기 전에 오른다).
     """
     if gauge.is_full:
-        finish_run(cleared=False)
+        fail_run()
     elif player.x >= stage.goal_x:
         start_goal_sequence()
 
@@ -185,6 +225,8 @@ def update_run(dt: float) -> None:
     global elapsed
     elapsed += dt
     gauge.step(dt, player.is_running())
+    # 심장박동은 한계 단계(95%~)에서만: 가득 찬(실패) 프레임에는 새로 울리지 않는다
+    sound.update_heartbeat(dt, gauge.stage is GaugeStage.LIMIT)
     game_world.update()
     game_world.handle_collisions()  # 모두 움직인 뒤의 위치로 겹침을 본다
     # 밀려난 위치까지 반영한 플레이어 위치로 카메라를 맞춰야 화면에서 흔들려 보이지 않는다
@@ -229,6 +271,7 @@ def draw_collision_boxes() -> None:
 def draw() -> None:
     clear_canvas()
     game_world.render()
+    hud.draw()
     if show_bb:
         draw_collision_boxes()
     update_canvas()

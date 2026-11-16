@@ -11,6 +11,7 @@ import fx
 import game_framework
 import game_world
 import resource
+import sound
 from camera import Camera
 from fx import SpriteLookup
 from game_object import GameObject
@@ -27,6 +28,7 @@ def bob_offset(elapsed: float) -> float:
 
 class Item(GameObject):
     sheet = ""  # 종류마다 정하는 스프라이트 시트 이름
+    sfx = ""  # 종류마다 정하는, 주웠을 때의 효과음 이름
 
     def __init__(
         self,
@@ -73,6 +75,7 @@ class Item(GameObject):
         sprite.draw(self.camera.to_screen_x(self.x), centre_y, self.frame)
 
     def handle_collision(self, group: str, other: GameObject) -> None:
+        sound.play_sfx(self.sfx)
         self.collect()
         game_world.remove_object(self)
 
@@ -85,6 +88,7 @@ class Breath(Item):
     """심호흡: 게이지를 덜어 낸다."""
 
     sheet = "item_breath"
+    sfx = sound.ITEM_BREATH
 
     def collect(self) -> None:
         self.player.gauge.add(-config.ITEM_BREATH_GAUGE_DROP)
@@ -94,6 +98,7 @@ class Gum(Item):
     """껌: 잠깐 게이지 상승을 붙잡는다."""
 
     sheet = "item_gum"
+    sfx = sound.ITEM_GUM
 
     def collect(self) -> None:
         self.player.gauge.freeze(config.ITEM_GUM_FREEZE_TIME)
@@ -103,6 +108,7 @@ class Shortcut(Item):
     """지름길: 먼지를 일으키며 앞으로 순간이동한다. 카메라는 미끄러지며 따라간다."""
 
     sheet = "item_shortcut"
+    sfx = sound.ITEM_SHORTCUT
 
     def collect(self) -> None:
         self._puff(self.player.x)

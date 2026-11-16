@@ -29,6 +29,7 @@ import config
 import fx
 import game_framework
 import resource
+import sound
 from camera import Camera
 from game_object import GameObject
 from gauge import Gauge, GaugeStage
@@ -131,6 +132,7 @@ class Jump(State):
     @staticmethod
     def enter(owner: "Player", event: MachineEvent) -> None:
         owner.vy = config.JUMP_V0
+        sound.play_sfx(sound.JUMP)
 
     @staticmethod
     def do(owner: "Player", dt: float) -> None:
@@ -342,6 +344,7 @@ class Player(GameObject):
         self.gauge.add(config.FALL_GAUGE_ADD)
         self.stun(config.FALL_STOP_TIME)
         fx.spawn_stars(self, self.camera, config.FALL_STOP_TIME, self._sprite_lookup)
+        sound.play_sfx(sound.FALL)
 
     def slow(self, duration: float) -> None:
         """duration초 동안 이동 속도를 줄인다 (더 긴 쪽만 남는다)."""

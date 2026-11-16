@@ -27,12 +27,14 @@ def main() -> int:
         return 1
 
     import game_framework
+    import sound
     import title_mode
 
     pico2d.open_canvas(config.SCREEN_W, config.SCREEN_H, True)
     pico2d.hide_lattice()
     try:
         resource.preload_all()
+        sound.init()
         game_framework.run(title_mode)
     finally:
         pico2d.close_canvas()

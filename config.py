@@ -143,3 +143,9 @@ GOAL_RESULT_DELAY = 1.5  # 골인한 뒤 결과 화면이 뜨기까지(초). 그
 RESULT_INPUT_GUARD = 0.4  # 결과 화면이 뜬 직후 키를 무시하는 시간(초). 점프 연타가 곧장 재시작이 되지 않게
 RESULT_CLEAR_BG_COLOR = (255, 224, 102)  # 성공: 노란 배경
 RESULT_FAIL_BG_COLOR = (0, 0, 0)  # 실패: 검은 화면
+
+# ---------------------------------------------------------------- HUD / 소리
+PIXELS_PER_METER = 60  # HUD "WC까지 ○m"에서 60px를 1m로 센다
+SOUND_VOLUME = 0.8  # 전체 볼륨 0.0~1.0. sound.set_volume()으로 한 번에 바꾼다
+BGM_VOLUME_RATIO = 0.5  # 배경음은 이 비율만큼 더 낮게 (효과음이 묻히지 않게)
+HEARTBEAT_PERIOD = 1.0  # 심장박동 소리를 이어 붙이는 간격(초). 소리 파일 길이와 같다

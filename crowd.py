@@ -7,6 +7,7 @@
 import config
 import game_framework
 import resource
+import sound
 from camera import Camera
 from fx import SpriteLookup
 from game_object import GameObject
@@ -62,6 +63,7 @@ class Crowd(GameObject):
             return
         was_running = self.player.is_running()
         away = -1 if self.player.x <= self.x else 1  # 온 쪽으로 되돌려 보낸다
+        sound.play_sfx(sound.PUSH)
         self.player.push(away * config.CROWD_PUSH_DISTANCE)
         if was_running:
             self.player.fall()
