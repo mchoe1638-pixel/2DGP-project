@@ -1,0 +1,2 @@
+Galmuri11.ttf, Galmuri11-Bold.ttf 를 이 폴더에 넣으세요.
+(Galmuri: https://github.com/quiple/galmuri , SIL OFL 1.1)

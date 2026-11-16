@@ -1,0 +1,374 @@
+{
+ "player_calm_idle": {
+  "file": "resource/image/player/player_calm_idle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 2
+ },
+ "player_calm_walk": {
+  "file": "resource/image/player/player_calm_walk.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 8
+ },
+ "player_calm_run": {
+  "file": "resource/image/player/player_calm_run.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 12
+ },
+ "player_calm_jump": {
+  "file": "resource/image/player/player_calm_jump.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 1
+ },
+ "player_calm_waddle": {
+  "file": "resource/image/player/player_calm_waddle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 6
+ },
+ "player_calm_fall": {
+  "file": "resource/image/player/player_calm_fall.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 4
+ },
+ "player_sweat_idle": {
+  "file": "resource/image/player/player_sweat_idle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 2
+ },
+ "player_sweat_walk": {
+  "file": "resource/image/player/player_sweat_walk.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 8
+ },
+ "player_sweat_run": {
+  "file": "resource/image/player/player_sweat_run.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 12
+ },
+ "player_sweat_jump": {
+  "file": "resource/image/player/player_sweat_jump.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 1
+ },
+ "player_sweat_waddle": {
+  "file": "resource/image/player/player_sweat_waddle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 6
+ },
+ "player_sweat_fall": {
+  "file": "resource/image/player/player_sweat_fall.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 4
+ },
+ "player_strain_idle": {
+  "file": "resource/image/player/player_strain_idle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 2
+ },
+ "player_strain_walk": {
+  "file": "resource/image/player/player_strain_walk.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 8
+ },
+ "player_strain_run": {
+  "file": "resource/image/player/player_strain_run.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 12
+ },
+ "player_strain_jump": {
+  "file": "resource/image/player/player_strain_jump.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 1
+ },
+ "player_strain_waddle": {
+  "file": "resource/image/player/player_strain_waddle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 6
+ },
+ "player_strain_fall": {
+  "file": "resource/image/player/player_strain_fall.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 4
+ },
+ "player_limit_idle": {
+  "file": "resource/image/player/player_limit_idle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 2
+ },
+ "player_limit_walk": {
+  "file": "resource/image/player/player_limit_walk.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 8
+ },
+ "player_limit_run": {
+  "file": "resource/image/player/player_limit_run.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 12
+ },
+ "player_limit_jump": {
+  "file": "resource/image/player/player_limit_jump.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 1
+ },
+ "player_limit_waddle": {
+  "file": "resource/image/player/player_limit_waddle.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4,
+  "fps": 6
+ },
+ "player_limit_fall": {
+  "file": "resource/image/player/player_limit_fall.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2,
+  "fps": 4
+ },
+ "npc_tourist": {
+  "file": "resource/image/npc/npc_tourist.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_flyer": {
+  "file": "resource/image/npc/npc_flyer.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_boss": {
+  "file": "resource/image/npc/npc_boss.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_commuter1": {
+  "file": "resource/image/npc/npc_commuter1.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_commuter2": {
+  "file": "resource/image/npc/npc_commuter2.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_commuter3": {
+  "file": "resource/image/npc/npc_commuter3.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "item_breath": {
+  "file": "resource/image/item/item_breath.png",
+  "frame_w": 54,
+  "frame_h": 54,
+  "frames": 2
+ },
+ "item_gum": {
+  "file": "resource/image/item/item_gum.png",
+  "frame_w": 54,
+  "frame_h": 54,
+  "frames": 2
+ },
+ "item_shortcut": {
+  "file": "resource/image/item/item_shortcut.png",
+  "frame_w": 72,
+  "frame_h": 102,
+  "frames": 1
+ },
+ "fx_exclaim": {
+  "file": "resource/image/fx/fx_exclaim.png",
+  "frame_w": 36,
+  "frame_h": 54,
+  "frames": 2
+ },
+ "fx_question": {
+  "file": "resource/image/fx/fx_question.png",
+  "frame_w": 42,
+  "frame_h": 54,
+  "frames": 1
+ },
+ "fx_speech": {
+  "file": "resource/image/fx/fx_speech.png",
+  "frame_w": 174,
+  "frame_h": 60,
+  "frames": 1
+ },
+ "fx_stars": {
+  "file": "resource/image/fx/fx_stars.png",
+  "frame_w": 60,
+  "frame_h": 30,
+  "frames": 3
+ },
+ "fx_dust": {
+  "file": "resource/image/fx/fx_dust.png",
+  "frame_w": 42,
+  "frame_h": 30,
+  "frames": 3
+ },
+ "fx_paper": {
+  "file": "resource/image/fx/fx_paper.png",
+  "frame_w": 24,
+  "frame_h": 21,
+  "frames": 1
+ },
+ "ui_gauge_frame": {
+  "file": "resource/image/ui/ui_gauge_frame.png",
+  "frame_w": 336,
+  "frame_h": 36,
+  "frames": 1
+ },
+ "ui_gauge_fill_blue": {
+  "file": "resource/image/ui/ui_gauge_fill_blue.png",
+  "frame_w": 324,
+  "frame_h": 24,
+  "frames": 1
+ },
+ "ui_gauge_fill_yellow": {
+  "file": "resource/image/ui/ui_gauge_fill_yellow.png",
+  "frame_w": 324,
+  "frame_h": 24,
+  "frames": 1
+ },
+ "ui_gauge_fill_orange": {
+  "file": "resource/image/ui/ui_gauge_fill_orange.png",
+  "frame_w": 324,
+  "frame_h": 24,
+  "frames": 1
+ },
+ "ui_gauge_fill_red": {
+  "file": "resource/image/ui/ui_gauge_fill_red.png",
+  "frame_w": 324,
+  "frame_h": 24,
+  "frames": 1
+ },
+ "ui_progress_frame": {
+  "file": "resource/image/ui/ui_progress_frame.png",
+  "frame_w": 216,
+  "frame_h": 18,
+  "frames": 1
+ },
+ "ui_progress_fill": {
+  "file": "resource/image/ui/ui_progress_fill.png",
+  "frame_w": 210,
+  "frame_h": 12,
+  "frames": 1
+ },
+ "ui_wc_badge": {
+  "file": "resource/image/ui/ui_wc_badge.png",
+  "frame_w": 60,
+  "frame_h": 33,
+  "frames": 1
+ },
+ "ui_head_icon": {
+  "file": "resource/image/ui/ui_head_icon.png",
+  "frame_w": 28,
+  "frame_h": 30,
+  "frames": 1
+ },
+ "title_logo": {
+  "file": "resource/image/ui/title_logo.png",
+  "frame_w": 464,
+  "frame_h": 192,
+  "frames": 1
+ },
+ "prop_train": {
+  "file": "resource/image/prop/prop_train.png",
+  "frame_w": 504,
+  "frame_h": 210,
+  "frames": 1
+ },
+ "prop_gate": {
+  "file": "resource/image/prop/prop_gate.png",
+  "frame_w": 78,
+  "frame_h": 96,
+  "frames": 1
+ },
+ "prop_wc_door": {
+  "file": "resource/image/prop/prop_wc_door.png",
+  "frame_w": 132,
+  "frame_h": 192,
+  "frames": 2
+ },
+ "prop_sign_wc": {
+  "file": "resource/image/prop/prop_sign_wc.png",
+  "frame_w": 120,
+  "frame_h": 42,
+  "frames": 1
+ },
+ "prop_stairs_sign": {
+  "file": "resource/image/prop/prop_stairs_sign.png",
+  "frame_w": 72,
+  "frame_h": 42,
+  "frames": 1
+ },
+ "bg_far": {
+  "file": "resource/image/bg/bg_far.png",
+  "frame_w": 1344,
+  "frame_h": 720,
+  "frames": 1
+ },
+ "bg_mid": {
+  "file": "resource/image/bg/bg_mid.png",
+  "frame_w": 1344,
+  "frame_h": 720,
+  "frames": 1
+ },
+ "floor_tile": {
+  "file": "resource/image/bg/floor_tile.png",
+  "frame_w": 192,
+  "frame_h": 120,
+  "frames": 1
+ },
+ "floor_stairs": {
+  "file": "resource/image/bg/floor_stairs.png",
+  "frame_w": 96,
+  "frame_h": 120,
+  "frames": 1
+ }
+}
