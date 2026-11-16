@@ -56,6 +56,18 @@ class BalanceInvariantTest(unittest.TestCase):
         self.assertGreater(config.STAIRS_SPEED_MULT, 0)
         self.assertLess(config.STAIRS_SPEED_MULT, 1)
 
+    def test_sweat_slows_the_player_down_without_stopping_them(self):
+        self.assertGreater(config.SWEAT_SPEED_MULT, 0)
+        self.assertLess(config.SWEAT_SPEED_MULT, 1)
+
+    def test_running_fills_the_gauge_faster_than_walking(self):
+        self.assertGreater(config.RUN_GAUGE_MULT, 1)
+
+    def test_growl_interval_is_a_positive_ascending_range(self):
+        low, high = config.GROWL_INTERVAL
+        self.assertGreater(low, 0)
+        self.assertLess(low, high)
+
     def test_stage_two_base_rate_exists(self):
         self.assertIn(2, config.GAUGE_BASE_RATE)
 
