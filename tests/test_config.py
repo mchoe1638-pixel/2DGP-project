@@ -52,6 +52,10 @@ class BalanceInvariantTest(unittest.TestCase):
     def test_run_is_faster_than_walk(self):
         self.assertGreater(config.RUN_SPEED, config.WALK_SPEED)
 
+    def test_stairs_slow_the_player_down_without_stopping_them(self):
+        self.assertGreater(config.STAIRS_SPEED_MULT, 0)
+        self.assertLess(config.STAIRS_SPEED_MULT, 1)
+
     def test_stage_two_base_rate_exists(self):
         self.assertIn(2, config.GAUGE_BASE_RATE)
 

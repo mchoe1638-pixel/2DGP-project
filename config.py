@@ -58,6 +58,7 @@ CAMERA_GLIDE_TIME = 0.35  # 지름길 순간이동 뒤 카메라가 따라잡는
 # ---------------------------------------------------------------- 이동 / 점프
 WALK_SPEED = 200  # px/s
 RUN_SPEED = 400  # px/s (SHIFT)
+STAIRS_SPEED_MULT = 0.7  # 계단 구간(stage.in_stairs)에서 이동 속도에 곱한다
 JUMP_V0 = 880  # px/s, 정점 높이 약 190px
 GRAVITY = 2000  # px/s^2
 

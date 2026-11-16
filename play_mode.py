@@ -1,16 +1,13 @@
 """플레이 화면.
 
-1단계: 배경·바닥 스크롤 확인용 뼈대. ← → 로 임시 시점을 옮긴다 (2단계에서 플레이어로 교체).
-ESC → 타이틀, 창 닫기 → 종료.
+배경·바닥과 플레이어를 월드에 올리고, 카메라가 플레이어를 따라간다.
+ESC → 타이틀, 창 닫기 → 종료. 나머지 입력은 모두 플레이어가 받는다.
 """
 
 from pico2d import (
     SDL_KEYDOWN,
-    SDL_KEYUP,
     SDL_QUIT,
     SDLK_ESCAPE,
-    SDLK_LEFT,
-    SDLK_RIGHT,
     Event,
     clear_canvas,
     get_events,
@@ -24,22 +21,20 @@ import stage_data
 import title_mode  # 순환 import지만 서로를 호출 시점에 모듈 속성으로만 쓰므로 안전하다
 from background import Floor, ParallaxLayer
 from camera import Camera
-from util import clamp
+from player import Player
 
 stage: stage_data.Stage  # init()에서 채운다
 camera: Camera
-focus_x = 0.0
-held_keys: set[int] = set()
+player: Player
 
 
 def init() -> None:
-    global stage, camera, focus_x
+    global stage, camera, player
     game_world.clear()
-    held_keys.clear()
     stage = stage_data.get_stage(2)
     camera = Camera(config.SCREEN_W, stage.length)
-    focus_x = stage.player_start_x
-    camera.snap_to(focus_x)
+    player = Player(stage, camera)
+    camera.snap_to(player.x)
     background = game_world.LAYER_BACKGROUND
     game_world.add_object(
         ParallaxLayer(camera, "bg_far", config.PARALLAX_FAR), background
@@ -48,6 +43,7 @@ def init() -> None:
         ParallaxLayer(camera, "bg_mid", config.PARALLAX_MID), background
     )
     game_world.add_object(Floor(camera, stage), background)
+    game_world.add_object(player, game_world.LAYER_PLAYER)
 
 
 def finish() -> None:
@@ -67,10 +63,8 @@ def handle_event(event: Event) -> None:
         game_framework.quit()
     elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
         game_framework.change_mode(title_mode)
-    elif event.type == SDL_KEYDOWN and event.key in (SDLK_LEFT, SDLK_RIGHT):
-        held_keys.add(event.key)
-    elif event.type == SDL_KEYUP:
-        held_keys.discard(event.key)
+    else:
+        player.handle_event(event)
 
 
 def handle_events() -> None:
@@ -79,12 +73,9 @@ def handle_events() -> None:
 
 
 def update() -> None:
-    global focus_x
-    dt = game_framework.frame_time
-    direction = (SDLK_RIGHT in held_keys) - (SDLK_LEFT in held_keys)
-    focus_x = clamp(0, focus_x + direction * config.RUN_SPEED * dt, stage.length)
-    camera.update(dt, focus_x)
     game_world.update()
+    # 플레이어가 이번 프레임에 움직인 뒤의 위치로 카메라를 맞춰야 화면에서 흔들려 보이지 않는다
+    camera.update(game_framework.frame_time, player.x)
 
 
 def draw() -> None:
