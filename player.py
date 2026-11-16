@@ -261,6 +261,11 @@ class Player(GameObject):
             return
         self.state_machine.handle_state_event((INPUT_EVENT, event))
 
+    def release_keys(self) -> None:
+        """눌려 있던 키를 모두 뗀 것으로 친다 (골인한 뒤처럼 더는 조작을 받지 않을 때)."""
+        self.pressed.clear()
+        self.state_machine.add_event((STAGE_EVENT, None))
+
     def direction(self) -> int:
         """눌린 방향키로 정한 이동 방향: 오른쪽 1, 왼쪽 -1, 둘 다 또는 둘 다 아니면 0.
 

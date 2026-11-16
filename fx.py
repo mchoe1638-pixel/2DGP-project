@@ -105,6 +105,26 @@ def _head_anchor(who: Located, camera: Camera, offset_x: float = 0) -> Anchor:
     return anchor
 
 
+def _ground_anchor(world_x: float, camera: Camera) -> Anchor:
+    """월드 x의 바닥 위. 카메라가 움직여도 그 자리에 머문다."""
+
+    def anchor() -> tuple[float, float]:
+        return camera.to_screen_x(world_x), config.GROUND_Y
+
+    return anchor
+
+
+def spawn_dust(
+    world_x: float,
+    camera: Camera,
+    lifetime: float,
+    sprite_lookup: SpriteLookup = resource.get_sprite,
+) -> Effect:
+    """월드 x의 바닥에서 먼지가 일어난다 (지름길로 떠나고 닿는 자리)."""
+    anchor = _ground_anchor(world_x, camera)
+    return _spawn(Effect("fx_dust", lifetime, anchor, sprite_lookup))
+
+
 def spawn_stars(
     player: Airborne,
     camera: Camera,
