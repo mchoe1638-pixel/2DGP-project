@@ -4,7 +4,6 @@ import unittest
 from unittest import mock
 
 from pico2d import (
-    SDL_KEYDOWN,
     SDL_KEYUP,
     SDLK_F1,
     SDLK_F2,
@@ -17,32 +16,19 @@ from pico2d import (
 
 import config
 import game_framework
+import game_world
 import play_mode
 from gauge import Gauge, GaugeStage
 from player import Run, Walk
-from tests.support import FRAME, FakeEvent
+from tests.play_support import PlayModeTestCase
+from tests.support import FRAME
 
 BASE_RATE = config.GAUGE_BASE_RATE[2]  # 플레이 화면은 2스테이지
 WALK_LIMIT_FRAMES = 60 * 120  # 한 스테이지 걷기가 이 안에 끝나지 않으면 뭔가 잘못된 것
 
 
-class PlayGaugeTestCase(unittest.TestCase):
-    """init()으로 실제 월드를 만든 플레이 화면 (그리기는 하지 않으므로 캔버스는 필요 없다)."""
-
-    def setUp(self):
-        play_mode.init()
-        self.addCleanup(play_mode.finish)
-
-    @staticmethod
-    def advance(seconds=FRAME):
-        """seconds초를 1/60초 프레임으로 나눠 플레이 화면을 갱신한다."""
-        with mock.patch.object(game_framework, "frame_time", FRAME):
-            for _ in range(round(seconds / FRAME)):
-                play_mode.update()
-
-    @staticmethod
-    def key(key_code, event_type=SDL_KEYDOWN):
-        play_mode.handle_event(FakeEvent(event_type, key_code))
+class PlayGaugeTestCase(PlayModeTestCase):
+    """게이지 시험은 플레이 화면 공통 바탕을 그대로 쓴다."""
 
 
 class SetupTest(PlayGaugeTestCase):
@@ -139,7 +125,12 @@ class StageWalkAcceptanceTest(PlayGaugeTestCase):
     """기획 검증: 2스테이지를 쉬지 않고 걸으면 약 46.9초 걸리고 게이지는 약 65.7%가 된다."""
 
     def walk_to_goal(self):
-        """→ 키만 누른 채 골까지 걷는다. (걸린 시간, 땀 단계가 시작된 x좌표)를 돌려준다."""
+        """→ 키만 누른 채 골까지 걷는다. (걸린 시간, 땀 단계가 시작된 x좌표)를 돌려준다.
+
+        기준 시간은 장애물이 없는 길의 값이므로, 먼저 길 위의 장애물을 모두 치운다.
+        """
+        for obstacle in list(game_world.world[game_world.LAYER_OBSTACLE]):
+            game_world.remove_object(obstacle)
         self.key(SDLK_RIGHT)
         sweat_x = None
         with mock.patch.object(game_framework, "frame_time", FRAME):

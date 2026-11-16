@@ -34,6 +34,53 @@ class Stage2DataTest(unittest.TestCase):
         self.assertFalse(flat.in_stairs(4500))
 
 
+class Stage2ObstacleTableTest(unittest.TestCase):
+    """기획서 2스테이지 장애물 배치표 (x는 월드 좌표)."""
+
+    def test_table_matches_the_design_document(self):
+        table = [
+            (spec.kind, spec.x, spec.count) for spec in stage_data.STAGE_2.obstacles
+        ]
+
+        self.assertEqual(
+            table,
+            [
+                (stage_data.TOURIST, 1000, 1),
+                (stage_data.FLYER, 1800, 1),
+                (stage_data.BOSS, 3300, 1),
+                (stage_data.CROWD, 4700, 4),
+                (stage_data.TOURIST, 5900, 1),
+                (stage_data.FLYER, 7000, 1),
+                (stage_data.CROWD, 7600, 3),
+            ],
+        )
+
+    def test_obstacles_run_in_order_between_the_start_and_the_goal(self):
+        stage = stage_data.STAGE_2
+        positions = [spec.x for spec in stage.obstacles]
+
+        self.assertEqual(positions, sorted(positions))
+        self.assertGreater(positions[0], stage.player_start_x)
+        self.assertLess(positions[-1], stage.goal_x)
+
+    def test_crowds_have_three_or_four_people_and_others_stand_alone(self):
+        for spec in stage_data.STAGE_2.obstacles:
+            with self.subTest(kind=spec.kind, x=spec.x):
+                if spec.kind == stage_data.CROWD:
+                    self.assertIn(spec.count, (3, 4))
+                else:
+                    self.assertEqual(spec.count, 1)
+
+    def test_obstacle_spec_is_immutable(self):
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            stage_data.STAGE_2.obstacles[0].x = 1
+
+    def test_a_stage_can_be_built_without_any_obstacles(self):
+        bare = dataclasses.replace(stage_data.STAGE_2, obstacles=())
+
+        self.assertEqual(bare.obstacles, ())
+
+
 class GetStageTest(unittest.TestCase):
     def test_returns_the_registered_stage(self):
         self.assertIs(stage_data.get_stage(2), stage_data.STAGE_2)

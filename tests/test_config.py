@@ -77,6 +77,54 @@ class BalanceInvariantTest(unittest.TestCase):
     def test_frame_time_is_clamped_to_a_sane_maximum(self):
         self.assertLessEqual(config.MAX_FRAME_TIME, 0.1)
 
+    def test_a_fall_stops_the_player_briefly_and_raises_the_gauge(self):
+        self.assertGreater(config.FALL_STOP_TIME, 0)
+        self.assertGreater(config.FALL_GAUGE_ADD, 0)
+
+    def test_the_flyer_slows_the_player_without_stopping_them(self):
+        self.assertGreater(config.FLYER_SPEED_MULT, 0)
+        self.assertLess(config.FLYER_SPEED_MULT, 1)
+        self.assertGreater(config.FLYER_SLOW_TIME, 0)
+
+    def test_the_boss_warns_early_enough_to_react_after_the_exclaim_ends(self):
+        # "!"가 사라진 뒤 가장 빠르게 달려도(상사도 걸어 온다) 부딪히기까지 반응할 시간이 남아야 한다.
+        left = config.BOSS_WARN_DISTANCE - config.RUN_SPEED * config.BOSS_EXCLAIM_TIME
+        closing_speed = config.RUN_SPEED + config.BOSS_WALK_SPEED
+
+        self.assertGreaterEqual(left / closing_speed, 0.5)
+
+    def test_the_boss_line_is_the_one_from_the_design_document(self):
+        self.assertEqual(config.BOSS_SPEECH_TEXT, "김대리~ 잠깐만!")
+
+    def test_a_crowd_push_throws_the_player_clear_of_the_widest_crowd(self):
+        widest_half = 1.5 * config.CROWD_MEMBER_SPACING + config.NPC_BB_HALF_W
+        reach = widest_half + config.PLAYER_BB_HALF_W
+
+        self.assertGreater(config.CROWD_PUSH_DISTANCE, reach)
+
+    def test_crowd_gap_is_a_part_of_each_cycle_and_the_ease_fits_inside_it(self):
+        self.assertGreater(config.CROWD_GAP_OPEN_TIME, 0)
+        self.assertLess(config.CROWD_GAP_OPEN_TIME, config.CROWD_GAP_PERIOD)
+        self.assertLessEqual(2 * config.CROWD_GAP_EASE, config.CROWD_GAP_OPEN_TIME)
+
+    def test_crowd_members_stand_shoulder_to_shoulder(self):
+        self.assertEqual(config.CROWD_MEMBER_SPACING, 2 * config.NPC_BB_HALF_W)
+
+    def test_a_running_player_can_cross_the_gap_even_on_the_stairs(self):
+        widest_half = 1.5 * config.CROWD_MEMBER_SPACING + config.NPC_BB_HALF_W
+        travel = 2 * (widest_half + config.PLAYER_BB_HALF_W)
+        stairs_run_speed = config.RUN_SPEED * config.STAIRS_SPEED_MULT
+
+        self.assertLess(travel / stairs_run_speed, config.CROWD_GAP_OPEN_TIME)
+
+    def test_npcs_walk_off_slowly_and_fade_out(self):
+        self.assertGreater(config.NPC_EXIT_SPEED, 0)
+        self.assertGreater(config.NPC_FADE_TIME, 0)
+
+    def test_effect_frames_advance_at_a_visible_pace(self):
+        self.assertGreater(config.FX_FRAME_PERIOD, 0)
+        self.assertLess(config.FX_FRAME_PERIOD, config.BOSS_EXCLAIM_TIME / 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,6 +27,7 @@ class Draw(NamedTuple):
     y: float
     frame: int
     flip: bool
+    alpha: float = 1.0
 
 
 class RecordingSprite(resource.Sprite):
@@ -37,7 +38,7 @@ class RecordingSprite(resource.Sprite):
         self._draws = draws
 
     def draw(self, x, y, frame=0, flip=False, scale=1, alpha=1.0):
-        self._draws.append(Draw(self.info.name, x, y, int(frame), flip))
+        self._draws.append(Draw(self.info.name, x, y, int(frame), flip, alpha))
 
 
 class SpriteBook:
@@ -51,10 +52,13 @@ class SpriteBook:
         return RecordingSprite(self.manifest[name], self.draws)
 
 
-def make_player(x=None, **options):
-    """(Player, 그리기 기록 장부). options는 Player 생성자에 그대로 넘긴다 (예: gauge=...)."""
-    camera = Camera(config.SCREEN_W, STAGE.length)
-    book = SpriteBook()
+def make_player(x=None, camera=None, book=None, **options):
+    """(Player, 그리기 기록 장부). options는 Player 생성자에 그대로 넘긴다 (예: gauge=...).
+
+    camera, book을 넘기면 다른 오브젝트(장애물 등)와 같은 카메라·장부를 함께 쓸 수 있다.
+    """
+    camera = camera if camera is not None else Camera(config.SCREEN_W, STAGE.length)
+    book = book if book is not None else SpriteBook()
     player = Player(STAGE, camera, sprite_lookup=book, **options)
     if x is not None:
         player.x = float(x)

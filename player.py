@@ -1,12 +1,15 @@
-"""플레이어: 이동·달리기·점프를 상태 머신으로 구현한다.
+"""플레이어: 이동·달리기·점프·기절을 상태 머신으로 구현한다.
 
-상태는 Idle / Walk / Run / Jump 이다 (기절 상태는 4단계에서 추가).
+상태는 Idle / Walk / Run / Jump / Stunned 이다.
 어느 상태로 갈지는 지금 눌려 있는 키 집합에서 매번 새로 계산한다. 그래서 ← → 를 함께 눌러도,
-점프 중에 키를 바꿔 눌러도 착지한 뒤 눌린 키에 맞는 상태로 돌아온다.
+점프 중에 키를 바꿔 눌러도, 기절해 있는 동안 키를 눌러 두어도 끝난 뒤 눌린 키에 맞는 상태로 돌아온다.
 
 참을성 게이지(gauge.Gauge)의 단계가 플레이어의 겉모습과 조작을 바꾼다:
 땀(50~) 속도 ×0.9 / 긴장(80~) 달리기 금지 + 뒤뚱 걸음 / 한계(95~) 좌우 반전.
 게이지를 흘려보내는 일(step)은 플레이 모드가 맡고, 플레이어는 단계를 읽기만 한다.
+
+장애물(obstacle.py, crowd.py)은 부딪혔을 때 플레이어의 stun(멈춤) / fall(넘어짐) /
+slow(느려짐) / push(밀려남)를 부른다. 어떤 장애물이 무엇을 부르는지는 장애물이 정한다.
 """
 
 from collections.abc import Callable
@@ -23,6 +26,7 @@ from pico2d import (
 )
 
 import config
+import fx
 import game_framework
 import resource
 from camera import Camera
@@ -36,6 +40,8 @@ from util import clamp
 INPUT_EVENT = "INPUT"  # ('INPUT', pico2d 키 이벤트)
 LAND_EVENT = "LAND"  # ('LAND', None): 점프가 땅에 닿았다
 STAGE_EVENT = "STAGE"  # ('STAGE', None): 게이지 단계가 바뀌었다
+STUN_EVENT = "STUN"  # ('STUN', None): 장애물에 걸려 꼼짝 못 하게 됐다
+WAKE_EVENT = "WAKE"  # ('WAKE', None): 기절이 끝나고 땅 위에 있다
 
 # 키 입력이나 게이지 단계가 바뀌면 걷기/달리기/멈춤을 다시 따져 본다
 RECHECK_EVENTS = (INPUT_EVENT, STAGE_EVENT)
@@ -71,6 +77,10 @@ def space_down(event: MachineEvent) -> bool:
         and payload.type == SDL_KEYDOWN
         and payload.key == SDLK_SPACE
     )
+
+
+def is_stun(event: MachineEvent) -> bool:
+    return event[0] == STUN_EVENT
 
 
 class Idle(State):
@@ -137,6 +147,28 @@ class Jump(State):
         owner.draw_pose("jump", JUMP_FRAME_RISING if rising else JUMP_FRAME_FALLING)
 
 
+class Stunned(State):
+    """기절: 키를 눌러도 움직이지 못하고, 공중이었다면 그 자리에서 곧장 떨어진다.
+
+    멈춰 있는 시간이 다 되고 땅에 닿아 있으면 눌린 키에 맞는 상태로 일어난다.
+    """
+
+    @staticmethod
+    def enter(owner: "Player", event: MachineEvent) -> None:
+        owner.frame = 0.0
+
+    @staticmethod
+    def do(owner: "Player", dt: float) -> None:
+        owner.drop(dt)
+        owner.animate(owner.stunned_anim(), dt)
+        if owner.can_get_up():
+            owner.state_machine.add_event((WAKE_EVENT, None))
+
+    @staticmethod
+    def draw(owner: "Player") -> None:
+        owner.draw_pose(owner.stunned_anim())
+
+
 class Player(GameObject):
     def __init__(
         self,
@@ -157,6 +189,10 @@ class Player(GameObject):
         self.vy = 0.0  # 위쪽 속도 (위가 +)
         self.facing = 1  # 1 = 오른쪽, -1 = 왼쪽 (멈춰도 마지막 방향을 유지한다)
         self.frame = 0.0  # 애니메이션 프레임 번호 (소수)
+        self.stun_remaining = 0.0  # 앞으로 꼼짝 못 하는 시간(초)
+        # 앞으로 넘어져 누워 있는 시간(초). 기절 시간 안에 든다
+        self.fall_remaining = 0.0
+        self.slow_remaining = 0.0  # 앞으로 전단지 때문에 느린 시간(초)
         self.pressed: set[int] = set()
         self.state_machine = StateMachine(self)
         self.state_machine.set_transitions(self._build_transitions())
@@ -183,11 +219,36 @@ class Player(GameObject):
         def on_land(state: type[State]) -> Predicate:
             return self._wants((LAND_EVENT,), state)
 
+        def on_wake(state: type[State]) -> Predicate:
+            return self._wants((WAKE_EVENT,), state)
+
+        # 기절은 어느 상태에서든 걸리고, 기절 중에는 키 입력(점프 포함)에 반응하지 않는다
         return {
-            Idle: {space_down: Jump, on_input(Walk): Walk, on_input(Run): Run},
-            Walk: {space_down: Jump, on_input(Idle): Idle, on_input(Run): Run},
-            Run: {space_down: Jump, on_input(Idle): Idle, on_input(Walk): Walk},
-            Jump: {on_land(Idle): Idle, on_land(Walk): Walk, on_land(Run): Run},
+            Idle: {
+                is_stun: Stunned,
+                space_down: Jump,
+                on_input(Walk): Walk,
+                on_input(Run): Run,
+            },
+            Walk: {
+                is_stun: Stunned,
+                space_down: Jump,
+                on_input(Idle): Idle,
+                on_input(Run): Run,
+            },
+            Run: {
+                is_stun: Stunned,
+                space_down: Jump,
+                on_input(Idle): Idle,
+                on_input(Walk): Walk,
+            },
+            Jump: {
+                is_stun: Stunned,
+                on_land(Idle): Idle,
+                on_land(Walk): Walk,
+                on_land(Run): Run,
+            },
+            Stunned: {on_wake(Idle): Idle, on_wake(Walk): Walk, on_wake(Run): Run},
         }
 
     def handle_event(self, event: Event) -> None:
@@ -236,6 +297,8 @@ class Player(GameObject):
             multiplier *= config.STAIRS_SPEED_MULT
         if self.gauge.stage >= GaugeStage.SWEAT:
             multiplier *= config.SWEAT_SPEED_MULT
+        if self.slow_remaining > 0.0:
+            multiplier *= config.FLYER_SPEED_MULT
         return multiplier
 
     def move(self, speed: float, dt: float) -> None:
@@ -253,8 +316,52 @@ class Player(GameObject):
         self.vy = 0.0
         self.state_machine.add_event((LAND_EVENT, None))
 
+    def drop(self, dt: float) -> None:
+        """공중에 떠 있으면 중력만 받아 곧장 떨어진다 (좌우로는 움직이지 않는다)."""
+        if self.height <= 0.0 and self.vy == 0.0:
+            return
+        self.height, self.vy = jump_step(self.height, self.vy, dt)
+        if self.height <= 0.0:
+            self.land()
+
+    # ------------------------------------------------------------ 장애물이 거는 효과
+    def stun(self, duration: float) -> None:
+        """duration초 동안 꼼짝 못 하게 한다. 어느 상태에서든 곧바로 걸리고, 이미 기절해 있으면
+        남은 시간과 비교해 더 긴 쪽만 남는다 (짧은 기절이 긴 기절을 끊지 않는다)."""
+        self.stun_remaining = max(self.stun_remaining, duration)
+        self.state_machine.handle_state_event((STUN_EVENT, None))
+
+    def fall(self) -> None:
+        """넘어진다: 잠깐 못 움직이고, 게이지가 한 번 오르고, 머리 둘레에 별이 돈다."""
+        self.fall_remaining = max(self.fall_remaining, config.FALL_STOP_TIME)
+        self.gauge.add(config.FALL_GAUGE_ADD)
+        self.stun(config.FALL_STOP_TIME)
+        fx.spawn_stars(self, self.camera, config.FALL_STOP_TIME, self._sprite_lookup)
+
+    def slow(self, duration: float) -> None:
+        """duration초 동안 이동 속도를 줄인다 (더 긴 쪽만 남는다)."""
+        self.slow_remaining = max(self.slow_remaining, duration)
+
+    def push(self, dx: float) -> None:
+        """dx(오른쪽 +, 왼쪽 -)만큼 곧바로 밀려난다. 하던 동작은 끊기지 않고, 카메라는 따라 미끄러진다."""
+        self.x = clamp(0, self.x + dx, self.stage.length)
+        self.camera.start_glide(config.CAMERA_GLIDE_TIME)
+
+    def can_get_up(self) -> bool:
+        return self.stun_remaining <= 0.0 and self.height <= 0.0
+
+    def stunned_anim(self) -> str:
+        """기절해 있는 모습의 시트 이름: 넘어졌으면 누운 모습, 그냥 멈춘 것이면 선 모습."""
+        return "fall" if self.fall_remaining > 0.0 else "idle"
+
     # ------------------------------------------------------------ 게임 오브젝트
+    def _tick_timers(self, dt: float) -> None:
+        self.stun_remaining = max(0.0, self.stun_remaining - dt)
+        self.fall_remaining = max(0.0, self.fall_remaining - dt)
+        self.slow_remaining = max(0.0, self.slow_remaining - dt)
+
     def step(self, dt: float) -> None:
+        self._tick_timers(dt)
         self.state_machine.update(dt)
 
     def update(self) -> None:
