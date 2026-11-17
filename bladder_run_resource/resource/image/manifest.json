@@ -317,6 +317,12 @@
   "frame_h": 192,
   "frames": 1
  },
+ "ui_black": {
+  "file": "resource/image/ui/ui_black.png",
+  "frame_w": 8,
+  "frame_h": 8,
+  "frames": 1
+ },
  "prop_train": {
   "file": "resource/image/prop/prop_train.png",
   "frame_w": 504,
@@ -369,6 +375,12 @@
   "file": "resource/image/bg/floor_stairs.png",
   "frame_w": 96,
   "frame_h": 120,
+  "frames": 1
+ },
+ "bg_train_inside": {
+  "file": "resource/image/bg/bg_train_inside.png",
+  "frame_w": 1280,
+  "frame_h": 720,
   "frames": 1
  }
 }
