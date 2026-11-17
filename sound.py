@@ -137,6 +137,15 @@ def stop_bgm() -> None:
     _current_bgm = None
 
 
+def stop_effects() -> None:
+    """울리는 중인 효과음을 모두 멈춘다 (배경음은 그대로). 소리가 꺼져 있으면 아무 일도 하지 않는다."""
+    if not _effects:
+        return
+    import pico2d  # 지연 import: 창 없이 이 모듈을 import하는 테스트를 위해
+
+    pico2d.Mix_HaltChannel(-1)  # -1: 모든 효과음 채널 (배경음은 채널을 쓰지 않는다)
+
+
 def update_heartbeat(dt: float, active: bool) -> None:
     """active인 동안 심장박동 소리를 HEARTBEAT_PERIOD마다 다시 틀어 끊김 없이 이어 붙인다."""
     global _heartbeat_left

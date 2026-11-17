@@ -13,6 +13,8 @@ ESC → 타이틀, 창 닫기 → 종료, 디버그 키 F1~F4·G → 게이지 �
 
 소리는 게이지 단계가 바뀔 때의 배경음 전환, 꾸르륵, 한계 단계의 심장박동, 성공·실패음을 여기서 맡는다.
 (점프·충돌·아이템 같은 효과음은 그 일이 일어나는 쪽에서 낸다.)
+
+인트로가 끝나고 들어올 때만 화면이 검정에서 서서히 밝아지며 시작한다 (intro_mode가 prepare_fade_in으로 예약한다).
 """
 
 from functools import partial
@@ -34,6 +36,7 @@ from pico2d import (
 )
 
 import config
+import fade
 import game_framework
 import game_world
 import gfx
@@ -72,6 +75,11 @@ elapsed = 0.0  # 이번 판에서 달린 시간(초). 골인한 뒤에는 흐르
 # 골인한 뒤 결과 화면까지 남은 시간(초). None이면 아직 달리는 중
 goal_countdown: float | None = None
 show_bb = False  # 충돌 상자를 그릴지 (화면에 들어올 때마다 꺼진 채로 시작한다)
+# 검정에서 밝아지며 시작하는 연출. 인트로에서 들어올 때만 쓰고, 타이틀·결과 화면에서 들어올 때는 0이다
+# 다음 init()에서 시작할 밝아짐의 길이(초). 시작하면 0으로 되돌린다
+pending_fade_in = 0.0
+fade_in_total = 0.0  # 이번 밝아짐의 전체 길이(초)
+fade_in_left = 0.0  # 밝아짐이 끝나기까지 남은 시간(초)
 
 
 def music_for(level_of_gauge: GaugeStage) -> str:
@@ -86,12 +94,27 @@ def switch_music(old: GaugeStage, new: GaugeStage) -> None:
     sound.play_bgm(music_for(new))
 
 
+def prepare_fade_in(duration: float) -> None:
+    """다음 init()에서 화면이 검정에서 duration초에 걸쳐 밝아지게 예약한다 (한 번 쓰면 사라진다)."""
+    global pending_fade_in
+    pending_fade_in = duration
+
+
+def start_fade_in() -> None:
+    """예약된 밝아짐을 시작하고 예약은 지운다. 예약이 없으면 밝아짐 없이 시작한다."""
+    global pending_fade_in, fade_in_total, fade_in_left
+    fade_in_total = pending_fade_in
+    fade_in_left = pending_fade_in
+    pending_fade_in = 0.0
+
+
 def init() -> None:
     global stage, camera, gauge, player, hud, elapsed, goal_countdown, show_bb
     game_world.clear()
     show_bb = False
     elapsed = 0.0
     goal_countdown = None
+    start_fade_in()
     stage = stage_data.get_stage(2)
     camera = Camera(config.SCREEN_W, stage.length)
     gauge = Gauge(config.GAUGE_BASE_RATE[stage.number])
@@ -245,7 +268,9 @@ def update_goal_sequence(dt: float, remaining: float) -> None:
 
 
 def update() -> None:
+    global fade_in_left
     dt = game_framework.frame_time
+    fade_in_left = max(0.0, fade_in_left - dt)
     if goal_countdown is None:
         update_run(dt)
     else:
@@ -274,4 +299,6 @@ def draw() -> None:
     hud.draw()
     if show_bb:
         draw_collision_boxes()
+    if fade_in_left > 0.0:
+        fade.to_black(fade_in_left / fade_in_total)
     update_canvas()

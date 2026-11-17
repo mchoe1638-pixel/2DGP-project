@@ -180,3 +180,21 @@ INTRO_FALLBACK_POLES = (  # 손잡이 기둥: 바닥선에서 위쪽 띠까지
     (706, INTRO_FLOOR_Y, 714, SCREEN_H - INTRO_LETTERBOX_H),
 )
 INTRO_FALLBACK_DOOR = (1090, INTRO_FLOOR_Y, 1190, 420)  # 오른쪽 끝의 문
+# 컷이 시작할 때 검정에서 장면으로 밝아지는 시간(초)
+INTRO_FADE_CUT = 0.3
+# 마지막 컷이 끝나기 전, 장면이 검정으로 어두워지는 시간(초)
+INTRO_FADE_OUT = 1.0
+# 인트로가 끝나고 플레이에 들어갈 때 검정에서 밝아지는 시간(초)
+INTRO_FADE_IN_PLAY = 0.5
+INTRO_SWAY_AMPLITUDE = 2  # 달리는 열차의 위아래 흔들림 폭(px)
+INTRO_SWAY_SPEED = 6.0  # 흔들림 속도(rad/s)
+# 인트로의 캐릭터·이펙트 확대 배율. 정수 배율이라 흐려지지 않는다 (배경은 원래 크기)
+INTRO_CHAR_SCALE = 2
+# 인트로 캐릭터가 서는 가로 위치 (발 가운데 x)
+INTRO_CHAR_X = {"player": 560, "commuter1": 360, "commuter2": 760, "commuter3": 960}
+# 컷 2: 꾸르륵 소리, 머리 위 "!", 땀 흘리는 자세가 한꺼번에 시작하는 때 (컷이 시작된 뒤 초)
+INTRO_REACT_AT = 0.5
+INTRO_EXCLAIM_TIME = 0.5  # 컷 2: "!"가 깜박이며 떠 있는 시간(초)
+INTRO_WADDLE_AT = 2.5  # 컷 2: 안절부절 못하는 자세로 바뀌는 때(초)
+# 컷 3: 열차 흔들림이 서서히 줄어 완전히 멈추는 때(초). 열차가 선다
+INTRO_SWAY_HALT_TIME = 2.5
