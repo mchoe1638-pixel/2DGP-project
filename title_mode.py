@@ -1,6 +1,7 @@
 """타이틀 화면: 로고, 배를 움켜쥐고 걷는 김급해, 깜박이는 시작 안내.
 
-SPACE → 플레이, ESC / 창 닫기 → 종료.
+SPACE → 인트로 컷신(이번 실행에서 처음 한 번만. 이미 봤으면 곧바로 플레이),
+ESC / 창 닫기 → 종료.
 """
 
 from pico2d import (
@@ -17,6 +18,7 @@ from pico2d import (
 import config
 import game_framework
 import gfx
+import intro_mode
 import play_mode  # 순환 import지만 서로를 호출 시점에 모듈 속성으로만 쓰므로 안전하다
 import resource
 import text
@@ -59,12 +61,20 @@ def resume() -> None:
     pass
 
 
+def start_game() -> None:
+    """인트로를 아직 못 봤으면 인트로부터, 봤으면 곧바로 플레이를 시작한다."""
+    if intro_mode.intro_seen:
+        game_framework.change_mode(play_mode)
+    else:
+        game_framework.change_mode(intro_mode)
+
+
 def handle_event(event: Event) -> None:
     is_key_down = event.type == SDL_KEYDOWN
     if event.type == SDL_QUIT or (is_key_down and event.key == SDLK_ESCAPE):
         game_framework.quit()
     elif is_key_down and event.key == SDLK_SPACE:
-        game_framework.change_mode(play_mode)
+        start_game()
 
 
 def handle_events() -> None:

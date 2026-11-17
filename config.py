@@ -149,3 +149,34 @@ PIXELS_PER_METER = 60  # HUD "WC까지 ○m"에서 60px를 1m로 센다
 SOUND_VOLUME = 0.8  # 전체 볼륨 0.0~1.0. sound.set_volume()으로 한 번에 바꾼다
 BGM_VOLUME_RATIO = 0.5  # 배경음은 이 비율만큼 더 낮게 (효과음이 묻히지 않게)
 HEARTBEAT_PERIOD = 1.0  # 심장박동 소리를 이어 붙이는 간격(초). 소리 파일 길이와 같다
+
+# ---------------------------------------------------------------- 인트로 컷신
+# 화면 위·아래 검은 띠의 높이(px). 자막과 안내 문구는 아래 띠 안에 놓인다
+INTRO_LETTERBOX_H = 90
+# 자막이 한 글자씩 나타나는 간격(초). 공백·문장부호도 한 글자로 센다
+INTRO_CHAR_INTERVAL = 0.05
+# 자막이 다 나온 뒤 컷이 머무는 최소 시간(초). 자막이 길면 컷이 이만큼 늘어난다
+INTRO_LINE_HOLD = 1.5
+INTRO_FLOOR_Y = 150  # 지하철 안 바닥선의 y (bg_train_inside 기준)
+INTRO_SUBTITLE_SIZE = 28
+INTRO_SUBTITLE_COLOR = (255, 255, 255)  # #FFFFFF
+INTRO_SUBTITLE_MAX_LINES = 2
+INTRO_SUBTITLE_LINE_HEIGHT = 34  # 두 줄일 때 줄 사이 간격(px)
+INTRO_HINT_TEXT = "SPACE 다음 · ESC 건너뛰기"
+INTRO_HINT_SIZE = 16
+INTRO_HINT_COLOR = (136, 136, 136)  # #888888
+# 안내 문구 자리: 오른쪽 아래 띠 안. (글자 오른쪽 끝 x, 글자 세로 중심 y)
+INTRO_HINT_POS = (SCREEN_W - 20, 18)
+# 배경 그림(bg_train_inside)이 없을 때 대신 그리는 윤곽선. 상자는 (왼쪽, 아래, 오른쪽, 위)
+INTRO_FALLBACK_BG_COLOR = (0, 0, 0)
+INTRO_FALLBACK_LINE_COLOR = (96, 96, 112)
+INTRO_FALLBACK_WINDOWS = (
+    (60, 450, 340, 590),
+    (400, 450, 680, 590),
+    (740, 450, 1020, 590),
+)
+INTRO_FALLBACK_POLES = (  # 손잡이 기둥: 바닥선에서 위쪽 띠까지
+    (366, INTRO_FLOOR_Y, 374, SCREEN_H - INTRO_LETTERBOX_H),
+    (706, INTRO_FLOOR_Y, 714, SCREEN_H - INTRO_LETTERBOX_H),
+)
+INTRO_FALLBACK_DOOR = (1090, INTRO_FLOOR_Y, 1190, 420)  # 오른쪽 끝의 문

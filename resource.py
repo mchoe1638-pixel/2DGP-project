@@ -6,6 +6,7 @@ Sprite를 만들 수 있고, 테스트는 loader를 바꿔 끼워 그리기 호�
 """
 
 import json
+import logging
 import os
 from collections.abc import Callable
 from typing import Any, NamedTuple
@@ -14,6 +15,8 @@ import config
 from util import snap
 
 REQUIRED_FIELDS = ("file", "frame_w", "frame_h", "frames")
+
+_log = logging.getLogger(__name__)
 
 
 class SpriteInfo(NamedTuple):
@@ -141,9 +144,38 @@ class Sprite:
             0, 0, width, self.frame_h, snap(x), snap(y)
         )
 
+    def draw_stretched(
+        self,
+        left: float,
+        bottom: float,
+        width: float,
+        height: float,
+        alpha: float = 1.0,
+    ) -> None:
+        """첫 칸을 왼쪽 아래 (left, bottom)에서 width × height 크기로 늘려 그린다 (단색 띠·가림막용)."""
+        image = self._get_image()
+        translucent = alpha < 1.0
+        if translucent:
+            image.opacify(alpha)
+        try:
+            image.clip_draw_to_origin(
+                0,
+                0,
+                self.frame_w,
+                self.frame_h,
+                snap(left),
+                snap(bottom),
+                snap(width),
+                snap(height),
+            )
+        finally:
+            if translucent:
+                image.opacify(1.0)  # 텍스처는 공유되므로 반드시 되돌린다
+
 
 _manifest: dict[str, SpriteInfo] | None = None
 _sprites: dict[str, Sprite] = {}
+_reported_missing: set[str] = set()  # 이미 알린 이름 (로그를 되풀이하지 않는다)
 
 
 def _manifest_entries() -> dict[str, SpriteInfo]:
@@ -164,6 +196,19 @@ def get_sprite(name: str) -> Sprite:
     sprite = Sprite(info)
     _sprites[name] = sprite
     return sprite
+
+
+def find_sprite(name: str, substitute: str = "") -> Sprite | None:
+    """get_sprite와 같지만 manifest에 없으면 예외 대신 None을 돌려준다 (없어도 되는 꾸밈 그림용).
+
+    substitute에 그림 대신 하는 일을 적어 두면, 없을 때 처음 한 번만 이름과 함께 로그로 알린다.
+    """
+    if name in _manifest_entries():
+        return get_sprite(name)
+    if substitute and name not in _reported_missing:
+        _reported_missing.add(name)
+        _log.warning("manifest에 %s 이(가) 없어 %s", name, substitute)
+    return None
 
 
 def preload_all() -> None:
