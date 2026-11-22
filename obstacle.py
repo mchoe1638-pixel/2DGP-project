@@ -123,7 +123,7 @@ class Npc(GameObject):
 class Tourist(Npc):
     """길을 묻는다: 플레이어는 잠시 붙잡혀 멈추고, 관광객은 그동안 그 자리에 있다가 떠난다."""
 
-    sheet = "npc_tourist"
+    sheet = "npc_tourist_front"
 
     def affect(self, player: Player) -> None:
         player.stun(config.TOURIST_STOP_TIME)
@@ -134,7 +134,7 @@ class Tourist(Npc):
 class Flyer(Npc):
     """전단지를 건넨다: 플레이어는 멈추지 않고 한동안 느려지고, 전단지 알바는 곧바로 떠난다."""
 
-    sheet = "npc_flyer"
+    sheet = "npc_flyer_front"
 
     def affect(self, player: Player) -> None:
         player.slow(config.FLYER_SLOW_TIME)
@@ -152,7 +152,7 @@ class BossPhase(Enum):
 class Boss(Npc):
     """경고("!") 뒤 걸어와서 붙잡는다: 플레이어는 멈추고 게이지가 오르고, 상사는 말이 끝나면 떠난다."""
 
-    sheet = "npc_boss"
+    sheet = "npc_boss_front"
 
     def __init__(
         self,

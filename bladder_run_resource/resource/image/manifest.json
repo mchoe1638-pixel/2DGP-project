@@ -167,38 +167,110 @@
   "frames": 2,
   "fps": 4
  },
- "npc_tourist": {
-  "file": "resource/image/npc/npc_tourist.png",
+ "arms_idle": {
+  "file": "resource/image/arms/arms_idle.png",
+  "frame_w": 480,
+  "frame_h": 300,
+  "frames": 2
+ },
+ "arms_walk": {
+  "file": "resource/image/arms/arms_walk.png",
+  "frame_w": 480,
+  "frame_h": 300,
+  "frames": 4
+ },
+ "arms_run": {
+  "file": "resource/image/arms/arms_run.png",
+  "frame_w": 480,
+  "frame_h": 300,
+  "frames": 4
+ },
+ "arms_jump": {
+  "file": "resource/image/arms/arms_jump.png",
+  "frame_w": 480,
+  "frame_h": 300,
+  "frames": 2
+ },
+ "arms_hold": {
+  "file": "resource/image/arms/arms_hold.png",
+  "frame_w": 480,
+  "frame_h": 300,
+  "frames": 4
+ },
+ "arms_fall": {
+  "file": "resource/image/arms/arms_fall.png",
+  "frame_w": 480,
+  "frame_h": 300,
+  "frames": 2
+ },
+ "npc_tourist_front": {
+  "file": "resource/image/npc/npc_tourist_front.png",
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2
  },
- "npc_flyer": {
-  "file": "resource/image/npc/npc_flyer.png",
+ "npc_flyer_front": {
+  "file": "resource/image/npc/npc_flyer_front.png",
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2
  },
- "npc_boss": {
-  "file": "resource/image/npc/npc_boss.png",
+ "npc_boss_front": {
+  "file": "resource/image/npc/npc_bujang_front.png",
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2
  },
- "npc_commuter1": {
-  "file": "resource/image/npc/npc_commuter1.png",
+ "npc_commuter1_front": {
+  "file": "resource/image/npc/npc_commuter1_front.png",
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2
  },
- "npc_commuter2": {
-  "file": "resource/image/npc/npc_commuter2.png",
+ "npc_commuter2_front": {
+  "file": "resource/image/npc/npc_commuter2_front.png",
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2
  },
- "npc_commuter3": {
-  "file": "resource/image/npc/npc_commuter3.png",
+ "npc_commuter3_front": {
+  "file": "resource/image/npc/npc_commuter3_front.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_commuter4_front": {
+  "file": "resource/image/npc/npc_commuter4_front.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_commuter5_front": {
+  "file": "resource/image/npc/npc_commuter5_front.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_staff_front": {
+  "file": "resource/image/npc/npc_staff_front.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_friend_front": {
+  "file": "resource/image/npc/npc_friend_front.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_coworker_front": {
+  "file": "resource/image/npc/npc_coworker_front.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 2
+ },
+ "npc_beggar_front": {
+  "file": "resource/image/npc/npc_beggar_front.png",
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2

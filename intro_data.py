@@ -118,9 +118,9 @@ class Cut:
 
 # 세 컷 모두 같은 자리에 서 있는 행인들. 둘째 행인은 좌우를 뒤집어 다른 쪽을 보게 한다
 CROWD = (
-    Extra("npc_commuter1", config.INTRO_CHAR_X["commuter1"]),
-    Extra("npc_commuter2", config.INTRO_CHAR_X["commuter2"], flip=True),
-    Extra("npc_commuter3", config.INTRO_CHAR_X["commuter3"]),
+    Extra("npc_commuter1_front", config.INTRO_CHAR_X["commuter1"]),
+    Extra("npc_commuter2_front", config.INTRO_CHAR_X["commuter2"], flip=True),
+    Extra("npc_commuter3_front", config.INTRO_CHAR_X["commuter3"]),
 )
 
 CUTS = (

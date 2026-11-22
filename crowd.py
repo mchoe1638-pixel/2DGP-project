@@ -15,7 +15,11 @@ from player import Player
 from resource import SpriteLookup
 from util import smoothstep
 
-COMMUTER_SHEETS = ("npc_commuter1", "npc_commuter2", "npc_commuter3")
+COMMUTER_SHEETS = (
+    "npc_commuter1_front",
+    "npc_commuter2_front",
+    "npc_commuter3_front",
+)
 CLOSED_TIME = (
     config.CROWD_GAP_PERIOD - config.CROWD_GAP_OPEN_TIME
 )  # 한 주기 중 틈이 닫혀 있는 시간
