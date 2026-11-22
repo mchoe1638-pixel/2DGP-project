@@ -14,10 +14,10 @@ import resource
 import text
 from camera import Camera
 from game_object import GameObject
+from resource import SpriteLookup
 from util import snap
 
 Anchor = Callable[[], tuple[float, float]]
-SpriteLookup = Callable[[str], resource.Sprite]
 
 
 class Located(Protocol):

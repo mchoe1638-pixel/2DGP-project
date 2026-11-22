@@ -2,6 +2,8 @@
 
 게임 규칙·밸런스에 쓰이는 숫자는 모두 이 파일에서만 정의한다.
 다른 모듈은 값을 읽기만 하고, 같은 숫자를 다시 적지 않는다.
+
+단위: 월드는 m·s·rad (1칸 = 1m, 예전 60px = 1m). 화면에 그리는 값만 px이다.
 """
 
 import os
@@ -46,33 +48,64 @@ GROUND_Y = 120  # 바닥 윗면의 y (pico2d 좌표: 화면 아래가 0)
 FOOT_OFFSET = 3  # 캐릭터 발이 바닥 윗면보다 이만큼 파묻혀 보이게 그린다
 DEFAULT_ANIM_FPS = 2  # manifest에 fps가 없는 시트(NPC 등)의 기본 애니메이션 속도
 
-# ---------------------------------------------------------------- 배경 (시차 스크롤)
-PARALLAX_FAR = 0.3
-PARALLAX_MID = 0.6
-PARALLAX_FLOOR = 1.0
+# ---------------------------------------------------------------- 렌더링 (레이캐스팅)
+FOV_DEG = 75  # 가로 시야각(도)
+RAY_STRIP_W = 4  # 광선 하나가 맡는 화면 세로 띠의 폭(px). 시작 값
+RAY_STRIP_CHOICES = (2, 4, 8)  # F5로 돌아가며 고르는 띠 폭(px)
+RAY_MIN_DIST = 0.05  # 벽에 바짝 붙어도 벽까지 거리를 이보다 짧게 치지 않는다(m)
+WALL_HEIGHT = 3.0  # 벽 높이(m)
+PITCH_MAX_PX = 220  # 위아래로 볼 때 지평선이 화면 가운데에서 움직이는 최대 거리(px)
+FOG_K = 0.12  # 거리 어둡게: 밝기 = 1 / (1 + 거리 × FOG_K)
+SIDE_SHADE = 0.8  # y축에 수직인 벽면(side 1)은 이만큼 더 어둡게
+GRADIENT_BANDS = 8  # 바닥·천장을 이 개수의 띠로 나눠 칠한다 (바닥 캐스팅 없음)
+CEIL_COLOR = (58, 62, 78)
+FLOOR_COLOR = (92, 96, 104)
+FLOOR_COLOR_STAIRS = (110, 100, 88)  # 플레이어가 계단 구역에 있을 때의 바닥 색
+SPRITE_M_PER_PX = 0.014  # 스프라이트 그림 1px이 월드에서 차지하는 높이(m)
+# 벽 텍스처가 manifest에 없을 때 대신 칠하는 단색
+WALL_FALLBACK_COLORS = {
+    "tex_wall_tile": (150, 160, 170),
+    "tex_wall_ad": (170, 140, 120),
+    "tex_wall_train": (90, 130, 110),
+    "tex_wall_stairs": (130, 120, 110),
+    "tex_wall_sign_wc": (230, 200, 60),
+    "tex_door_wc": (60, 110, 210),  # 닫힌 문: 파랑
+}
+DOOR_OPEN_FALLBACK_COLOR = (70, 180, 90)  # 열린 문: 초록
 
-# ---------------------------------------------------------------- 카메라
-CAMERA_ANCHOR_DIV = 3  # 플레이어는 화면 왼쪽에서 가로폭의 1/3 지점에 머문다
-CAMERA_GLIDE_TIME = 0.35  # 지름길 순간이동 뒤 카메라가 따라잡는 시간(초)
+# ---------------------------------------------------------------- 마우스
+MOUSE_SENS_YAW = 0.0025  # rad / px
+MOUSE_SENS_PITCH = 0.9  # px / px
+MOUSE_INVERT_Y = False  # True면 마우스를 내릴 때 위를 본다
 
-# ---------------------------------------------------------------- 이동 / 점프
-WALK_SPEED = 200  # px/s
-RUN_SPEED = 400  # px/s (SHIFT)
-STAIRS_SPEED_MULT = 0.7  # 계단 구간(stage.in_stairs)에서 이동 속도에 곱한다
-JUMP_V0 = 880  # px/s, 정점 높이 약 190px
-GRAVITY = 2000  # px/s^2
+# ---------------------------------------------------------------- 이동 / 점프 (m, s)
+WALK_MAX = 3.3  # 걷기 최고 속도(m/s)
+RUN_MAX = 6.7  # SHIFT 달리기 최고 속도(m/s)
+BACK_MAX = 2.0  # 뒤로 걸을 때 최고 속도(m/s)
+ACCEL_GROUND = 9.0  # 땅에서 입력이 있을 때 가속(m/s²)
+DECEL_GROUND = 10.0  # 땅에서 입력이 없을 때 감속(m/s²)
+ACCEL_AIR = 2.5  # 공중에서 방향을 바꾸는 가속(m/s²)
+JUMP_V = 4.7  # 점프 첫 속도(m/s). 정점 약 0.79m, 체공 약 0.67초
+GRAVITY = 14.0  # m/s²
+PLAYER_RADIUS = 0.3  # 플레이어 충돌 원 반지름(m)
+EYE_HEIGHT = 1.6  # 서 있을 때 눈높이(m)
+EYE_FALL_HEIGHT = 0.5  # 넘어졌을 때 눈높이(m)
+FALL_SPEED = 4.5  # 이 수평 속도(m/s) 이상으로 장애물에 부딪히면 넘어진다
+WALL_BUMP_SPEED = 5.0  # 이 속도(m/s) 이상으로 벽에 부딪히면 쿵 소리
+CROWD_PUSH = 2.0  # 인파에 닿으면 뒤로 밀려나는 거리(m)
+HIGH_ITEM_Z = 2.1  # 'high' 아이템이 떠 있는 높이(m)
+HIGH_ITEM_NEED_Z = 0.3  # 'high' 아이템을 먹으려면 발이 이만큼 떠 있어야 한다(m)
+STAIRS_SPEED_MULT = 0.7  # 계단 구역에서 최고 속도에 곱한다
+COLLISION_SUBSTEP = 0.25  # 한 번에 이보다 길게 움직이면 나눠서 벽을 검사한다(m)
 
 # ---------------------------------------------------------------- 충돌 박스 (발 기준)
-PLAYER_BB_HALF_W = 20
-PLAYER_BB_HEIGHT = 125
 NPC_BB_HALF_W = 22
 NPC_BB_HEIGHT = 100  # 걷는 중 점프로도 넘을 수 있는 높이
 CROWD_BB_HEIGHT = 220  # 인파는 점프로 넘을 수 없다
 
 # ---------------------------------------------------------------- 참을성 게이지
 GAUGE_MAX = 100.0
-# 상승 속도(%/s). 2스테이지만 사용하고 1·3은 이후 주차에서 쓴다.
-GAUGE_BASE_RATE = {1: 1.0, 2: 1.4, 3: 1.6}
+# 상승 속도(%/s)는 스테이지 데이터의 base_rate를 쓴다 (stage_data.py)
 RUN_GAUGE_MULT = 1.6  # 달리는 동안 게이지 상승 배율
 # 단계 경계값: 50 땀 / 80 긴장 / 95 한계 / 100 실패 (0~49는 평온)
 STAGE_THRESHOLDS = (50, 80, 95, 100)
@@ -116,7 +149,6 @@ ITEM_BOB_PERIOD = 1.4  # 한 번 오르내리는 시간(초)
 ITEM_BREATH_GAUGE_DROP = 15.0  # 심호흡이 게이지에서 덜어 내는 양(%)
 ITEM_GUM_FREEZE_TIME = 3.0  # 껌이 게이지 상승을 붙잡는 시간(초)
 ITEM_SHORTCUT_DISTANCE = 800  # 지름길이 플레이어를 앞으로 보내는 거리(px)
-PROP_WALL_HEIGHT = 260  # 벽에 걸린 표지판 아래끝의 바닥 위 높이(px)
 
 # ---------------------------------------------------------------- 이펙트 / 디버그
 FX_FRAME_PERIOD = 0.12  # 이펙트 시트가 한 칸 넘어가는 시간(초)
@@ -131,7 +163,20 @@ FX_SPEECH_OFFSET_X = -61  # 말풍선은 말하는 사람의 이만큼 옆(왼�
 FX_SPEECH_TEXT_OFFSET = (0, 4)  # 말풍선 그림 중심에서 대사 글자까지의 어긋남
 FX_SPEECH_TEXT_SIZE = 16
 FX_SPEECH_TEXT_COLOR = (40, 40, 48)  # 말풍선은 밝은 바탕이라 어두운 글자
-DEBUG_BB_COLOR = (255, 64, 64)  # B 키로 켜는 충돌 상자 테두리 색
+DEBUG_BB_COLOR = (255, 64, 64)  # B 키로 켜는 충돌 원 색
+
+# ---------------------------------------------------------------- 디버그 미니맵 (M) / FPS (F7)
+MINIMAP_CELL_PX = 8  # 격자 한 칸을 미니맵에서 그리는 크기(px)
+MINIMAP_VIEW_COLS = 36  # 플레이어 둘레로 보여 주는 가로 칸 수 (세로는 지도 전체)
+MINIMAP_MARGIN = 16  # 화면 오른쪽 아래 모서리에서 떨어진 거리(px)
+MINIMAP_FLOOR_COLOR = (28, 28, 38)
+MINIMAP_STAIRS_COLOR = (64, 52, 40)
+MINIMAP_PLAYER_COLOR = (255, 210, 63)
+MINIMAP_PLAYER_PX = 3  # 플레이어 점 반지름(px)
+MINIMAP_OBJECT_COLOR = (90, 200, 255)  # 오브젝트 점 색
+MINIMAP_OBJECT_PX = 2  # 오브젝트 점 반지름(px)
+MINIMAP_VIEW_LINE = 2.0  # 바라보는 방향 선의 길이(칸)
+FPS_LOG_INTERVAL = 1.0  # F7을 켜면 이 간격(초)마다 평균 FPS를 콘솔에 남긴다
 
 # ---------------------------------------------------------------- 타이틀
 TITLE_BG_COLOR = (29, 27, 58)  # #1D1B3A
@@ -145,7 +190,6 @@ RESULT_CLEAR_BG_COLOR = (255, 224, 102)  # 성공: 노란 배경
 RESULT_FAIL_BG_COLOR = (0, 0, 0)  # 실패: 검은 화면
 
 # ---------------------------------------------------------------- HUD / 소리
-PIXELS_PER_METER = 60  # HUD "WC까지 ○m"에서 60px를 1m로 센다
 SOUND_VOLUME = 0.8  # 전체 볼륨 0.0~1.0. sound.set_volume()으로 한 번에 바꾼다
 BGM_VOLUME_RATIO = 0.5  # 배경음은 이 비율만큼 더 낮게 (효과음이 묻히지 않게)
 HEARTBEAT_PERIOD = 1.0  # 심장박동 소리를 이어 붙이는 간격(초). 소리 파일 길이와 같다

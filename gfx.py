@@ -15,6 +15,14 @@ def fill_screen(color: Color) -> None:
     )
 
 
+def fill_box(left: int, bottom: int, right: int, top: int, color: Color) -> None:
+    """[left, right) × [bottom, top) 영역을 한 색으로 칠한다 (오른쪽·위쪽 끝은 칠하지 않는다)."""
+    if right <= left or top <= bottom:
+        return
+    red, green, blue = color
+    draw_rectangle(left, bottom, right - 1, top - 1, red, green, blue, 255, True)
+
+
 def outline_box(
     left: float, bottom: float, right: float, top: float, color: Color
 ) -> None:

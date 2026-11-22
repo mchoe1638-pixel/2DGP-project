@@ -6,8 +6,8 @@
 import config
 import resource
 from camera import Camera
-from fx import SpriteLookup
 from game_object import GameObject
+from resource import SpriteLookup
 
 WC_DOOR_SHEET = "prop_wc_door"
 DOOR_CLOSED_FRAME = 0

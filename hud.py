@@ -7,10 +7,10 @@
 import config
 import resource
 import text
-from fx import SpriteLookup
 from gauge import Gauge
 from player import Player
-from stage_data import Stage
+from resource import SpriteLookup
+from stage import Stage
 from util import clamp
 
 Color = tuple[int, int, int]
@@ -92,12 +92,11 @@ class Hud:
     # ------------------------------------------------------------ 값
     def remaining_metres(self) -> int:
         """골인 문까지 남은 거리(m). 반올림하고, 문을 지나쳤으면 0."""
-        pixels = self.stage.goal_x - self.player.x
-        return max(0, int(pixels / config.PIXELS_PER_METER + 0.5))
+        return max(0, round(self.stage.goal_x - self.player.x))
 
     def progress(self) -> float:
         """출발점(0.0)에서 골인 문(1.0)까지 얼마나 왔는지."""
-        start = self.stage.player_start_x
+        start = self.stage.player_start[0]
         return clamp(0.0, (self.player.x - start) / (self.stage.goal_x - start), 1.0)
 
     # ------------------------------------------------------------ 그리기

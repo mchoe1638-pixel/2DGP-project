@@ -9,10 +9,10 @@ import game_framework
 import resource
 import sound
 from camera import Camera
-from fx import SpriteLookup
 from game_object import GameObject
 from obstacle import PLAYER_OBSTACLE
 from player import Player
+from resource import SpriteLookup
 from util import smoothstep
 
 COMMUTER_SHEETS = ("npc_commuter1", "npc_commuter2", "npc_commuter3")

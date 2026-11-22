@@ -14,9 +14,9 @@ import game_world
 import resource
 import sound
 from camera import Camera
-from fx import SpriteLookup
 from game_object import GameObject
 from player import Player
+from resource import SpriteLookup
 
 PLAYER_OBSTACLE = "player:obstacle"  # 충돌 그룹: 왼쪽은 플레이어, 오른쪽은 장애물들
 

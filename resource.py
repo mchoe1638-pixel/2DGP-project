@@ -173,6 +173,8 @@ class Sprite:
                 image.opacify(1.0)  # 텍스처는 공유되므로 반드시 되돌린다
 
 
+SpriteLookup = Callable[[str], Sprite]  # 이름 → 스프라이트 (테스트·폴백에서 바꿔 끼운다)
+
 _manifest: dict[str, SpriteInfo] | None = None
 _sprites: dict[str, Sprite] = {}
 _reported_missing: set[str] = set()  # 이미 알린 이름 (로그를 되풀이하지 않는다)
