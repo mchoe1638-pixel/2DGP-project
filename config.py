@@ -62,6 +62,9 @@ CEIL_COLOR = (58, 62, 78)
 FLOOR_COLOR = (92, 96, 104)
 FLOOR_COLOR_STAIRS = (110, 100, 88)  # 플레이어가 계단 구역에 있을 때의 바닥 색
 SPRITE_M_PER_PX = 0.014  # 스프라이트 그림 1px이 월드에서 차지하는 높이(m)
+BILLBOARD_MIN_DIST = 0.2  # 눈앞(카메라 앞으로)이 이보다 가까운 빌보드는 그리지 않는다(m)
+DECO_WALL_INSET = 0.6  # 벽에 건 장식이 벽면에서 이만큼 앞에 선다(m)
+DECO_SIGN_Z = 2.0  # 벽에 건 표지판 그림 아래끝의 높이(m)
 # 벽 텍스처가 manifest에 없을 때 대신 칠하는 단색
 WALL_FALLBACK_COLORS = {
     "tex_wall_tile": (150, 160, 170),

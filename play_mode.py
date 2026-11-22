@@ -1,6 +1,7 @@
 """플레이 화면 (1인칭).
 
-레이캐스터가 격자 지도의 바닥·천장과 벽을 그리고, 그 위에 1인칭 팔과 HUD를 얹는다.
+레이캐스터가 격자 지도의 바닥·천장과 벽을 그리고, 월드에 서 있는 오브젝트(get_billboard)를
+빌보드로 그린 뒤(벽에 가려지는 부분은 레이캐스터가 가린다), 그 위에 1인칭 팔과 HUD를 얹는다.
 플레이어는 움직일 때마다 카메라(눈)를 자기 위치로 옮기고, 마우스는 카메라의 고개를 돌린다.
 참을성 게이지는 여기서 만들고 매 프레임 흘려보낸다 (플레이어는 단계를 읽기만 한다).
 
@@ -49,11 +50,13 @@ import fade
 import game_framework
 import game_world
 import input_state
+import prop
 import result_mode  # 순환 import지만 서로를 호출 시점에 모듈 속성으로만 쓰므로 안전하다
 import sound
 import title_mode  # 위와 같은 이유로 안전하다
 from camera import Camera
 from fps_meter import FpsMeter
+from game_object import Billboard
 from gauge import Gauge, GaugeStage
 from hud import Hud
 from input_state import InputState
@@ -161,6 +164,8 @@ def init() -> None:
     raycaster = Raycaster(stage.grid)
     minimap = Minimap(stage.grid)
     game_world.add_object(player, game_world.LAYER_PLAYER)
+    for spec in stage.deco:
+        game_world.add_object(prop.deco_prop(spec, stage), game_world.LAYER_PROP)
     sound.play_bgm(music_for(gauge.stage))
     input_state.set_mouse_captured(True)
     fps_meter.restart()
@@ -312,9 +317,16 @@ def floor_color() -> Color:
     return config.FLOOR_COLOR
 
 
+def billboards() -> list[Billboard]:
+    """이번 프레임에 월드에 세울 그림들 (그리지 않는 오브젝트는 건너뛴다)."""
+    boards = (obj.get_billboard() for obj in game_world.all_objects())
+    return [board for board in boards if board is not None]
+
+
 def draw() -> None:
     clear_canvas()
     raycaster.render(camera, floor_color())
+    raycaster.draw_billboards(camera, billboards())
     viewmodel.draw()
     hud.draw()
     if show_minimap:

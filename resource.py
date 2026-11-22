@@ -2,7 +2,9 @@
 
 이미지는 처음 그릴 때 한 번만 불러온다(지연 로딩). 그래서 캔버스를 열기 전이나 테스트에서도
 Sprite를 만들 수 있고, 테스트는 loader를 바꿔 끼워 그리기 호출만 검사한다.
-스프라이트 시트는 모두 한 줄(single-row)이며 원본 크기 그대로 그린다(확대·축소 없음).
+스프라이트 시트는 모두 한 줄(single-row)이다.
+Sprite.draw는 원본 크기 그대로 그린다(키우려면 scale 인자). 월드에 세운 빌보드는
+레이캐스터가 거리에 맞춰 줄여서 직접 그린다.
 """
 
 import json
@@ -93,6 +95,11 @@ class Sprite:
     def load(self) -> None:
         """이미지를 지금 불러온다. 캔버스를 연 직후 호출하면 첫 그리기에서 끊기지 않는다."""
         self._get_image()
+
+    @property
+    def image(self) -> Any:
+        """pico2d 이미지 (아직 안 불렀으면 이때 불러온다). 텍스처를 SDL로 바로 그릴 때 쓴다."""
+        return self._get_image()
 
     def next_frame(self, frame: float, dt: float) -> float:
         """애니메이션 프레임 번호(소수)를 dt초만큼 진행시킨다."""
