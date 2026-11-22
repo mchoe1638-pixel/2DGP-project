@@ -26,7 +26,6 @@ class Camera:
         self.yaw = yaw
         self.pitch_px = 0.0
         self.eye_z = config.EYE_HEIGHT
-        self.bob_x = 0.0  # 머리 흔들림의 가로 어긋남(px). 빌보드와 팔을 같은 만큼 민다
 
     # ------------------------------------------------------------ 움직이기
     def look(self, dx: int, dy: int) -> None:
@@ -42,12 +41,11 @@ class Camera:
             config.PITCH_MAX_PX,
         )
 
-    def place(self, x: float, y: float, eye_z: float, bob_x: float = 0.0) -> None:
-        """눈을 월드 (x, y)의 높이 eye_z(m)에 둔다."""
+    def place(self, x: float, y: float, eye_z: float) -> None:
+        """눈을 월드 (x, y)의 높이 eye_z(m)에 둔다 (머리 흔들림의 위아래 몫이 들어 있다)."""
         self.x = x
         self.y = y
         self.eye_z = eye_z
-        self.bob_x = bob_x
 
     # ------------------------------------------------------------ 방향
     @property

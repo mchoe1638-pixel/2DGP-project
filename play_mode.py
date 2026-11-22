@@ -1,6 +1,6 @@
 """플레이 화면 (1인칭).
 
-레이캐스터가 격자 지도의 바닥·천장과 벽을 그리고, 그 위에 HUD를 얹는다.
+레이캐스터가 격자 지도의 바닥·천장과 벽을 그리고, 그 위에 1인칭 팔과 HUD를 얹는다.
 플레이어는 움직일 때마다 카메라(눈)를 자기 위치로 옮기고, 마우스는 카메라의 고개를 돌린다.
 참을성 게이지는 여기서 만들고 매 프레임 흘려보낸다 (플레이어는 단계를 읽기만 한다).
 
@@ -13,7 +13,8 @@
 
 ESC → 타이틀, 창 닫기 → 종료.
 디버그 키 (화면에는 켜졌다는 표시를 하지 않는다): F1~F4 게이지를 평온·땀·긴장·한계 단계 시작 값으로,
-G 게이지 정지, B 충돌 원 표시(미니맵), M 미니맵, F5 광선 띠 폭 바꾸기, F7 평균 FPS를 콘솔에.
+G 게이지 정지, B 충돌 원 표시(미니맵), M 미니맵, F5 광선 띠 폭 바꾸기, F6 머리 흔들림 켜기/끄기,
+F7 평균 FPS를 콘솔에.
 나머지 키는 InputState가 받아 두고 플레이어가 읽는다 (골인한 뒤에는 받지 않는다).
 
 소리는 게이지 단계가 바뀔 때의 배경음 전환, 꾸르륵, 한계 단계의 심장박동, 성공·실패음을 여기서 맡는다.
@@ -32,6 +33,7 @@ from pico2d import (
     SDLK_F3,
     SDLK_F4,
     SDLK_F5,
+    SDLK_F6,
     SDLK_F7,
     Event,
     SDLK_b,
@@ -59,6 +61,7 @@ from minimap import Minimap
 from player import Player
 from raycaster import Color, Raycaster
 from stage import Stage, build_stage
+from viewmodel import Viewmodel
 
 STAGE_NUMBER = 2  # 3주차에는 스테이지 2만 있다
 
@@ -73,6 +76,7 @@ DEBUG_FREEZE_KEY = SDLK_g  # 게이지 정지 켜기/끄기
 DEBUG_BB_KEY = SDLK_b  # 충돌 원 표시 켜기/끄기
 DEBUG_MINIMAP_KEY = SDLK_m  # 미니맵 켜기/끄기
 DEBUG_STRIP_KEY = SDLK_F5  # 광선 띠 폭 바꾸기
+DEBUG_HEAD_BOB_KEY = SDLK_F6  # 머리 흔들림 켜기/끄기
 DEBUG_FPS_KEY = SDLK_F7  # 평균 FPS 기록 켜기/끄기
 DEBUG_KEYS = frozenset(
     {
@@ -81,6 +85,7 @@ DEBUG_KEYS = frozenset(
         DEBUG_BB_KEY,
         DEBUG_MINIMAP_KEY,
         DEBUG_STRIP_KEY,
+        DEBUG_HEAD_BOB_KEY,
         DEBUG_FPS_KEY,
     }
 )
@@ -89,11 +94,13 @@ stage: Stage  # init()에서 채운다
 camera: Camera
 gauge: Gauge
 player: Player
+viewmodel: Viewmodel
 hud: Hud
 controls: InputState
 raycaster: Raycaster
 minimap: Minimap
 fps_meter = FpsMeter()  # 다시 하기를 눌러도 켜 둔 상태가 이어진다
+head_bob_enabled = config.HEAD_BOB_ENABLED  # 머리 흔들림. F6으로 바꾼 값이 다시 하기에도 이어진다
 elapsed = 0.0  # 이번 판에서 달린 시간(초). 골인한 뒤에는 흐르지 않는다
 # 골인한 뒤 결과 화면까지 남은 시간(초). None이면 아직 달리는 중
 goal_countdown: float | None = None
@@ -134,7 +141,7 @@ def start_fade_in() -> None:
 
 # ---------------------------------------------------------------- 모드 함수
 def init() -> None:
-    global stage, camera, gauge, player, hud, controls, raycaster, minimap
+    global stage, camera, gauge, player, viewmodel, hud, controls, raycaster, minimap
     global elapsed, goal_countdown, show_bb, show_minimap
     game_world.clear()
     show_bb = False
@@ -148,7 +155,8 @@ def init() -> None:
     gauge.on_stage_change(switch_music)
     gauge.on_growl(partial(sound.play_sfx, sound.GROWL))
     controls = InputState()
-    player = Player(stage, camera, controls)
+    player = Player(stage, camera, controls, gauge, head_bob_enabled)
+    viewmodel = Viewmodel(player, gauge)
     hud = Hud(stage, gauge, player)
     raycaster = Raycaster(stage.grid)
     minimap = Minimap(stage.grid)
@@ -181,6 +189,13 @@ def resume() -> None:
 
 
 # ---------------------------------------------------------------- 입력
+def toggle_head_bob() -> None:
+    """머리 흔들림을 켜고 끈다 (꺼도 1인칭 팔은 걸음에 맞춰 움직인다)."""
+    global head_bob_enabled
+    head_bob_enabled = not head_bob_enabled
+    player.head_bob = head_bob_enabled
+
+
 def handle_debug_key(key: int) -> None:
     """디버그 키 하나를 처리한다 (어떤 키가 무엇인지는 모듈 설명 참고)."""
     global show_bb, show_minimap
@@ -190,6 +205,8 @@ def handle_debug_key(key: int) -> None:
         show_minimap = not show_minimap
     elif key == DEBUG_STRIP_KEY:
         raycaster.cycle_strip_width()
+    elif key == DEBUG_HEAD_BOB_KEY:
+        toggle_head_bob()
     elif key == DEBUG_FPS_KEY:
         fps_meter.toggle()
     elif key == DEBUG_FREEZE_KEY:
@@ -226,6 +243,7 @@ def start_goal_sequence() -> None:
     global goal_countdown
     raycaster.set_door_open(True)
     controls.release_all()
+    player.halt()  # 미끄러지다 닫힌 문 칸에 부딪혀 쿵 소리가 나지 않게
     goal_countdown = config.GOAL_RESULT_DELAY
     silence_music()
     sound.play_sfx(sound.CLEAR)
@@ -281,6 +299,7 @@ def update() -> None:
         update_run(dt)
     else:
         update_goal_sequence(dt, goal_countdown)
+    viewmodel.update()
     controls.end_frame()
     fps_meter.tick(raycaster.strip_w)
 
@@ -296,6 +315,7 @@ def floor_color() -> Color:
 def draw() -> None:
     clear_canvas()
     raycaster.render(camera, floor_color())
+    viewmodel.draw()
     hud.draw()
     if show_minimap:
         minimap.draw(camera, show_bb=show_bb)
