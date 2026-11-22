@@ -9,7 +9,10 @@
 - 서기: arms_idle (ARMS_IDLE_FPS로 두 칸을 오가며 숨 쉰다)
 
 그리는 곳: (화면 가운데 + bob_x, ARMS_BASE_Y + bob_y × ARMS_BOB_PX_PER_M)을 중심으로 원본 크기.
+팔 시트는 칸 아래 끝에 그림이 붙어 있어, 걸음으로 올라와도 화면 아래가 비지 않게
+ARMS_SHEET_SINK_PX만큼 내려 그린다 (단색 팔은 그대로).
 땀 단계(50%~)에서는 fx_sweat_hand를 손 위에 겹친다 (그림이 있을 때만, 없으면 생략).
+땀 그림은 팔을 따라 같은 높이에 그린다.
 
 manifest에 팔 그림이 없으면 단색 팔(흰 소매 끝의 살색 손)을 대신 그린다. 걷고 달릴 때 두 손이 걸음에 맞춰
 엇갈려 오르내리고, 시트가 바뀌면 ARMS_POSE_BLEND_TIME 동안 새 자세로 옮겨 가 손이 튀지 않는다.
@@ -121,6 +124,7 @@ class Viewmodel:
         if sprite is None:
             self._draw_fallback(x, y)
         else:
+            y -= config.ARMS_SHEET_SINK_PX
             sprite.draw(x, y, self.frame(sheet))
         if self._sweat is not None and self.gauge.stage >= GaugeStage.SWEAT:
             self._sweat.draw(x, y, self._sweat_frame)

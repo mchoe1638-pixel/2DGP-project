@@ -115,6 +115,9 @@ BOB_SWAY_PX = {"walk": 6, "run": 10, "strain": 14}
 BOB_BLEND_TIME = 0.15  # 걸음걸이가 바뀌거나 멈출 때 흔들림 폭이 새 값으로 옮겨 가는 시간(초)
 ARMS_BASE_Y = 150  # 1인칭 팔 그림 중심의 y(px). 가로는 화면 가운데
 ARMS_BOB_PX_PER_M = 400  # 머리가 1m 오르내릴 때 팔이 따라 움직이는 거리(px)
+# 팔 시트 그림은 칸의 아래 끝이 곧 그림의 아래 끝이라, 걸음으로 팔이 올라오면 화면 아래가
+# 비어 보인다. 그래서 시트 그림만 흔들림이 가장 클 때 올라오는 높이(px)만큼 내려 그린다
+ARMS_SHEET_SINK_PX = max(BOB_AMP.values()) * ARMS_BOB_PX_PER_M
 ARMS_FRAMES_PER_STEP = 2  # 걷기·달리기 팔 시트가 한 걸음에 넘어가는 칸 수 (4칸 시트면 두 걸음에 한 바퀴)
 ARMS_IDLE_FPS = 1.5  # 서 있을 때 팔이 숨 쉬는 2칸 애니메이션의 속도(칸/초)
 # 팔 그림이 manifest에 없을 때 대신 그리는 단색 팔: 흰 소매 위에 살색 손 사각형
