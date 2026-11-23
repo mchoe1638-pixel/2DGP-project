@@ -11,6 +11,16 @@ def clamp(minimum: Number, value: Number, maximum: Number) -> Number:
     return max(minimum, min(value, maximum))
 
 
+def unit_vector(
+    dx: float, dy: float, fallback: tuple[float, float] = (1.0, 0.0)
+) -> tuple[float, float]:
+    """(dx, dy)를 길이 1로 맞춘다. 길이가 0이라 방향이 없으면 fallback을 그대로 돌려준다."""
+    length = math.hypot(dx, dy)
+    if length == 0.0:
+        return fallback
+    return dx / length, dy / length
+
+
 def snap(value: float) -> int:
     """그리기 좌표를 정수 픽셀로 반올림한다 (0.5는 올림)."""
     return math.floor(value + 0.5)

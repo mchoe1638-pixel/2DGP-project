@@ -1,6 +1,6 @@
 """모든 게임 오브젝트의 공통 인터페이스 기본 구현.
 
-game_world는 update / get_bb / handle_collision을 부르고, 플레이 모드는 get_billboard로 받은
+game_world는 update / get_bb / handle_collision을 부르고, 플레이 모드는 get_billboards로 받은
 빌보드를 모아 레이캐스터에 넘긴다 (벽에 가려지는 부분은 레이캐스터가 띠 단위로 가린다).
 필요한 메서드만 덮어쓰면 되고, 나머지는 아무 일도 하지 않는다.
 """
@@ -9,6 +9,9 @@ from typing import NamedTuple
 
 import config
 from resource import Sprite
+
+# 충돌 원기둥: (x, y, 반지름, 아래 z, 위 z). 모두 월드 좌표(m)이고 z는 바닥에서의 높이다
+Cylinder = tuple[float, float, float, float, float]
 
 
 class Billboard(NamedTuple):
@@ -45,8 +48,13 @@ class GameObject:
         """이번 프레임에 월드에 세울 그림. 그리지 않으면 None."""
         return None
 
-    def get_bb(self) -> tuple[float, float, float, float] | None:
-        """(left, bottom, right, top) 충돌 상자. 충돌하지 않으면 None."""
+    def get_billboards(self) -> tuple[Billboard, ...]:
+        """이번 프레임에 월드에 세울 그림 전부. 몸과 머리 위 표시처럼 여러 장을 세우는 오브젝트가 덮어쓴다."""
+        board = self.get_billboard()
+        return () if board is None else (board,)
+
+    def get_bb(self) -> Cylinder | None:
+        """(x, y, 반지름, 아래 z, 위 z) 충돌 원기둥. 충돌하지 않으면 None."""
         return None
 
     def handle_collision(self, group: str, other: "GameObject") -> None:

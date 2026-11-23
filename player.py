@@ -1,15 +1,17 @@
 """플레이어 (1인칭): 가속도로 움직이는 몸, 점프와 넘어짐, 걸음에 맞춘 머리 흔들림, 카메라(눈) 맞추기.
 
 이동
-- ↑/↓는 바라보는 방향으로 앞뒤, ←/→는 옆걸음이다. 입력 방향은 길이 1로 맞춘다 (대각선이 더 빠르지 않게).
-  한계 단계(95%~)에서는 ←/→만 뒤바뀐다.
+- W/S는 바라보는 방향으로 앞뒤, A/D는 옆걸음이다. 입력 방향은 길이 1로 맞춘다 (대각선이 더 빠르지 않게).
+  한계 단계(95%~)에서는 A/D만 뒤바뀐다.
 - 목표 속도 = 입력 방향 × 최고 속도. 땅에서는 ACCEL_GROUND로 목표 속도를 따라가고, 손을 떼면
   DECEL_GROUND로 멈춘다 (달리다 손을 떼면 2m 남짓 미끄러진다). 공중에서는 ACCEL_AIR로 조금만 틀 수 있고,
   손을 떼면 속도를 그대로 유지한다.
 - 최고 속도: 걷기 WALK_MAX, SHIFT 달리기 RUN_MAX, 뒤로 BACK_MAX. 긴장 단계(80%~)부터는 SHIFT를 무시한다.
-  땀 단계(50%~)에서는 SWEAT_SPEED_MULT, 계단 위에서는 STAIRS_SPEED_MULT를 곱한다.
+  땀 단계(50%~)에서는 SWEAT_SPEED_MULT, 계단 위에서는 STAIRS_SPEED_MULT, 전단지(slow) 동안은
+  FLYER_SPEED_MULT를 곱한다.
 - 몸은 반지름 PLAYER_RADIUS의 원이다. 벽에 막히면 x·y축을 따로 밀어 벽을 따라 미끄러지고
   (map_grid.MapGrid.move_and_slide), 막힌 축의 속도는 0이 된다. 그 축으로 WALL_BUMP_SPEED 이상이었으면 쿵 소리.
+  방해물과의 충돌은 발에서 PLAYER_HEIGHT까지 선 원기둥(get_bb)으로 game_world가 검사한다.
 - SPACE: 땅에 서 있고 멈춰 있지 않을 때 JUMP_V로 뛴다. 공중에서는 GRAVITY로 떨어진다.
 
 상태: 서기(IDLE) < IDLE_SPEED_MAX ≤ 걷기(WALK) < RUN_SPEED_MIN ≤ 달리기(RUN),
@@ -25,29 +27,21 @@
 import math
 from enum import Enum, auto
 
-from pico2d import (
-    SDLK_DOWN,
-    SDLK_LEFT,
-    SDLK_LSHIFT,
-    SDLK_RIGHT,
-    SDLK_RSHIFT,
-    SDLK_SPACE,
-    SDLK_UP,
-)
+from pico2d import SDLK_LSHIFT, SDLK_RSHIFT, SDLK_SPACE, SDLK_a, SDLK_d, SDLK_s, SDLK_w
 
 import config
 import game_framework
 import sound
 from camera import Camera
-from game_object import GameObject
+from game_object import Cylinder, GameObject
 from gauge import Gauge, GaugeStage
 from input_state import InputState
 from stage import Stage
 
-FORWARD_KEY = SDLK_UP
-BACK_KEY = SDLK_DOWN
-LEFT_KEY = SDLK_LEFT
-RIGHT_KEY = SDLK_RIGHT
+FORWARD_KEY = SDLK_w
+BACK_KEY = SDLK_s
+LEFT_KEY = SDLK_a
+RIGHT_KEY = SDLK_d
 RUN_KEYS = (SDLK_LSHIFT, SDLK_RSHIFT)
 JUMP_KEY = SDLK_SPACE
 
@@ -104,6 +98,7 @@ class Player(GameObject):
         self.state = Motion.IDLE
         self.state_time = 0.0  # 지금 상태가 이어진 시간(초)
         self.stun_remaining = 0.0  # 못 움직이는 남은 시간(초)
+        self.slow_remaining = 0.0  # 전단지 때문에 느린 남은 시간(초)
         self.fallen = False  # 넘어져 있는지 (멈춤이 끝나면 일어선다)
         self.eye_base = config.EYE_HEIGHT  # 흔들림을 빼고 발에서 잰 눈높이(m)
         self.step_phase = 0.0  # 걸음 위상: 한 걸음에 1씩 오르고 STEP_CYCLE에서 0으로 돌아간다
@@ -127,9 +122,22 @@ class Player(GameObject):
     def is_stunned(self) -> bool:
         return self.stun_remaining > 0.0
 
+    @property
+    def is_slowed(self) -> bool:
+        return self.slow_remaining > 0.0
+
     def is_running(self) -> bool:
         """달리는 빠르기(RUN_SPEED_MIN 이상)로 움직이는 중인지 (게이지가 더 빨리 오른다)."""
         return not self.is_stunned and self.speed >= config.RUN_SPEED_MIN
+
+    @property
+    def falls_on_impact(self) -> bool:
+        """지금 속도로 장애물에 부딪히면 넘어지는지: 수평 속력이 FALL_SPEED 이상이면 그렇다.
+
+        SHIFT를 누르고 있는지는 보지 않는다 (손을 뗐어도 아직 빠르면 넘어진다: 관성이 곧 위험이다).
+        멈춤(stun)과 밀림(push)은 속도를 0으로 만들므로, 부딪힌 순간 효과를 걸기 전에 읽어 둬야 한다.
+        """
+        return self.speed >= config.FALL_SPEED
 
     def gait(self) -> str | None:
         """머리 흔들림에 쓸 걸음걸이 (GAIT_*). 땅에서 걷거나 달리는 중이 아니면 None."""
@@ -143,7 +151,7 @@ class Player(GameObject):
 
     # ------------------------------------------------------------ 입력
     def wish_input(self) -> tuple[float, float]:
-        """누른 키로 정한 (앞, 오른쪽) 입력. 각각 -1, 0, 1. 한계 단계(95%~)에서는 ←/→가 뒤바뀐다."""
+        """누른 키로 정한 (앞, 오른쪽) 입력. 각각 -1, 0, 1. 한계 단계(95%~)에서는 A/D가 뒤바뀐다."""
         held = self.controls.is_held
         ahead = float(held(FORWARD_KEY)) - float(held(BACK_KEY))
         aside = float(held(RIGHT_KEY)) - float(held(LEFT_KEY))  # +가 오른쪽
@@ -179,12 +187,25 @@ class Player(GameObject):
             top *= config.SWEAT_SPEED_MULT
         if self.stage.grid.is_stairs(self.x, self.y):
             top *= config.STAIRS_SPEED_MULT
+        if self.is_slowed:
+            top *= config.FLYER_SPEED_MULT
         return top
+
+    def get_bb(self) -> Cylinder | None:
+        """발에서 PLAYER_HEIGHT까지 선 원기둥. 점프하면 발과 함께 올라간다."""
+        return (
+            self.x,
+            self.y,
+            config.PLAYER_RADIUS,
+            self.z,
+            self.z + config.PLAYER_HEIGHT,
+        )
 
     # ------------------------------------------------------------ 갱신
     def update(self) -> None:
         dt = game_framework.frame_time
         self._tick_stun(dt)
+        self.slow_remaining = max(0.0, self.slow_remaining - dt)
         self._steer(dt)
         self._update_vertical(dt)
         self._move(dt)
@@ -314,6 +335,29 @@ class Player(GameObject):
         self.stun_remaining = max(self.stun_remaining, duration)
         self.vx = 0.0
         self.vy = 0.0
+
+    def slow(self, duration: float) -> None:
+        """duration초 동안 최고 속도를 FLYER_SPEED_MULT배로 줄인다. 이미 느리면 더 긴 쪽을 따른다."""
+        self.slow_remaining = max(self.slow_remaining, duration)
+
+    def push(self, direction_x: float, direction_y: float, distance: float) -> None:
+        """(direction_x, direction_y) 방향으로 distance(m)만큼 떠민다.
+
+        방향은 길이가 1이 아니어도 된다. 벽에 막히면 거기서 멈추고, 속도는 0이 된다.
+        """
+        length = math.hypot(direction_x, direction_y)
+        self.vx = self.vy = 0.0
+        if length == 0.0:
+            return
+        reach = distance / length
+        moved = self.stage.grid.move_and_slide(
+            self.x,
+            self.y,
+            direction_x * reach,
+            direction_y * reach,
+            config.PLAYER_RADIUS,
+        )
+        self.x, self.y = moved.x, moved.y
 
     def fall(self) -> None:
         """넘어진다: FALL_STOP_TIME 멈춤, 게이지 +FALL_GAUGE_ADD, 넘어지는 소리. 눈이 바닥 가까이로 내려간다."""

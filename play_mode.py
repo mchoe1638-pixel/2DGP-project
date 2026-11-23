@@ -1,9 +1,10 @@
 """플레이 화면 (1인칭).
 
-레이캐스터가 격자 지도의 바닥·천장과 벽을 그리고, 월드에 서 있는 오브젝트(get_billboard)를
+레이캐스터가 격자 지도의 바닥·천장과 벽을 그리고, 월드에 서 있는 오브젝트(get_billboards)를
 빌보드로 그린 뒤(벽에 가려지는 부분은 레이캐스터가 가린다), 그 위에 1인칭 팔과 HUD를 얹는다.
 플레이어는 움직일 때마다 카메라(눈)를 자기 위치로 옮기고, 마우스는 카메라의 고개를 돌린다.
 참을성 게이지는 여기서 만들고 매 프레임 흘려보낸다 (플레이어는 단계를 읽기만 한다).
+장애물은 init()에서 스테이지 데이터대로 세우고, 플레이어와의 충돌은 매 프레임 움직인 뒤에 본다.
 
 마우스: 화면에 들어오거나 다시 돌아오면 상대 모드로 잡아 커서를 숨기고, 나가거나 멈추면 풀어 준다.
 움직인 양은 매 프레임 한 번 읽는다 (MOUSEMOTION 이벤트는 쓰지 않는다).
@@ -53,6 +54,7 @@ import input_state
 import prop
 import result_mode  # 순환 import지만 서로를 호출 시점에 모듈 속성으로만 쓰므로 안전하다
 import sound
+import spawner
 import title_mode  # 위와 같은 이유로 안전하다
 from camera import Camera
 from fps_meter import FpsMeter
@@ -60,7 +62,8 @@ from game_object import Billboard
 from gauge import Gauge, GaugeStage
 from hud import Hud
 from input_state import InputState
-from minimap import Minimap
+from minimap import Circle, Minimap
+from obstacle import PLAYER_OBSTACLE
 from player import Player
 from raycaster import Color, Raycaster
 from stage import Stage, build_stage
@@ -166,9 +169,21 @@ def init() -> None:
     game_world.add_object(player, game_world.LAYER_PLAYER)
     for spec in stage.deco:
         game_world.add_object(prop.deco_prop(spec, stage), game_world.LAYER_PROP)
+    place_obstacles()
     sound.play_bgm(music_for(gauge.stage))
     input_state.set_mouse_captured(True)
     fps_meter.restart()
+
+
+def place_obstacles() -> None:
+    """스테이지의 장애물을 월드에 세우고, 플레이어와 부딪히는 쌍으로 맺는다.
+
+    플레이어는 왼쪽 목록에 한 번만 넣고, 장애물은 하나씩 오른쪽 목록에 넣는다.
+    """
+    game_world.add_collision_pair(PLAYER_OBSTACLE, player, None)
+    for obj in spawner.spawn_obstacles(stage, player):
+        game_world.add_object(obj, game_world.LAYER_OBSTACLE)
+        game_world.add_collision_pair(PLAYER_OBSTACLE, None, obj)
 
 
 def silence_music() -> None:
@@ -319,8 +334,19 @@ def floor_color() -> Color:
 
 def billboards() -> list[Billboard]:
     """이번 프레임에 월드에 세울 그림들 (그리지 않는 오브젝트는 건너뛴다)."""
-    boards = (obj.get_billboard() for obj in game_world.all_objects())
-    return [board for board in boards if board is not None]
+    return [
+        board for obj in game_world.all_objects() for board in obj.get_billboards()
+    ]
+
+
+def collision_circles() -> list[Circle]:
+    """미니맵에 찍을 충돌 원 (x, y, 반지름): 지금 몸이 있는 오브젝트만, 플레이어는 빼고."""
+    circles: list[Circle] = []
+    for obj in game_world.all_objects():
+        cylinder = obj.get_bb()
+        if cylinder is not None and obj is not player:
+            circles.append((cylinder[0], cylinder[1], cylinder[2]))
+    return circles
 
 
 def draw() -> None:
@@ -330,7 +356,7 @@ def draw() -> None:
     viewmodel.draw()
     hud.draw()
     if show_minimap:
-        minimap.draw(camera, show_bb=show_bb)
+        minimap.draw(camera, collision_circles(), show_bb=show_bb)
     if fade_in_left > 0.0:
         fade.to_black(fade_in_left / fade_in_total)
     update_canvas()

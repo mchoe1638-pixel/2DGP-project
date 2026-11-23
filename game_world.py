@@ -1,7 +1,7 @@
 """레이어별 게임 오브젝트 목록과 충돌 쌍 관리.
 
 오브젝트는 update(), draw(), get_bb(), handle_collision(group, other)를 가진다.
-get_bb()는 (left, bottom, right, top) 또는 None(충돌 없음)을 돌려준다.
+get_bb()는 충돌 원기둥 (x, y, 반지름, 아래 z, 위 z) 또는 None(충돌 없음)을 돌려준다.
 """
 
 from game_object import GameObject
@@ -72,16 +72,20 @@ def add_collision_pair(
 
 
 def collide(a: GameObject, b: GameObject) -> bool:
-    """두 오브젝트의 AABB가 겹치는지. 변만 맞닿은 경우는 겹침이 아니다."""
-    box_a = a.get_bb()
-    box_b = b.get_bb()
-    if box_a is None or box_b is None:
+    """두 원기둥이 겹치는지: 바닥 위 거리가 반지름의 합보다 짧고 높이 구간도 겹쳐야 한다.
+
+    맞닿기만 한 것(거리가 반지름의 합과 같거나 한쪽 바닥이 다른 쪽 꼭대기와 같음)은 겹침이 아니다.
+    """
+    cylinder_a = a.get_bb()
+    cylinder_b = b.get_bb()
+    if cylinder_a is None or cylinder_b is None:
         return False
-    left_a, bottom_a, right_a, top_a = box_a
-    left_b, bottom_b, right_b, top_b = box_b
-    apart_horizontally = right_a <= left_b or right_b <= left_a
-    apart_vertically = top_a <= bottom_b or top_b <= bottom_a
-    return not (apart_horizontally or apart_vertically)
+    x_a, y_a, radius_a, bottom_a, top_a = cylinder_a
+    x_b, y_b, radius_b, bottom_b, top_b = cylinder_b
+    reach = radius_a + radius_b
+    if (x_a - x_b) ** 2 + (y_a - y_b) ** 2 >= reach * reach:
+        return False
+    return bottom_a < top_b and bottom_b < top_a
 
 
 def handle_collisions() -> None:
