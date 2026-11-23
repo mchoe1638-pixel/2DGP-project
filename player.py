@@ -1,8 +1,8 @@
 """플레이어 (1인칭): 가속도로 움직이는 몸, 점프와 넘어짐, 걸음에 맞춘 머리 흔들림, 카메라(눈) 맞추기.
 
 이동
-- W/S는 바라보는 방향으로 앞뒤, A/D는 옆걸음이다. 입력 방향은 길이 1로 맞춘다 (대각선이 더 빠르지 않게).
-  한계 단계(95%~)에서는 A/D만 뒤바뀐다.
+- ↑/↓는 바라보는 방향으로 앞뒤, ←/→는 옆걸음이다. 입력 방향은 길이 1로 맞춘다 (대각선이 더 빠르지 않게).
+  한계 단계(95%~)에서는 ←/→만 뒤바뀐다.
 - 목표 속도 = 입력 방향 × 최고 속도. 땅에서는 ACCEL_GROUND로 목표 속도를 따라가고, 손을 떼면
   DECEL_GROUND로 멈춘다 (달리다 손을 떼면 2m 남짓 미끄러진다). 공중에서는 ACCEL_AIR로 조금만 틀 수 있고,
   손을 떼면 속도를 그대로 유지한다.
@@ -25,7 +25,15 @@
 import math
 from enum import Enum, auto
 
-from pico2d import SDLK_LSHIFT, SDLK_RSHIFT, SDLK_SPACE, SDLK_a, SDLK_d, SDLK_s, SDLK_w
+from pico2d import (
+    SDLK_DOWN,
+    SDLK_LEFT,
+    SDLK_LSHIFT,
+    SDLK_RIGHT,
+    SDLK_RSHIFT,
+    SDLK_SPACE,
+    SDLK_UP,
+)
 
 import config
 import game_framework
@@ -36,10 +44,10 @@ from gauge import Gauge, GaugeStage
 from input_state import InputState
 from stage import Stage
 
-FORWARD_KEY = SDLK_w
-BACK_KEY = SDLK_s
-LEFT_KEY = SDLK_a
-RIGHT_KEY = SDLK_d
+FORWARD_KEY = SDLK_UP
+BACK_KEY = SDLK_DOWN
+LEFT_KEY = SDLK_LEFT
+RIGHT_KEY = SDLK_RIGHT
 RUN_KEYS = (SDLK_LSHIFT, SDLK_RSHIFT)
 JUMP_KEY = SDLK_SPACE
 
@@ -135,7 +143,7 @@ class Player(GameObject):
 
     # ------------------------------------------------------------ 입력
     def wish_input(self) -> tuple[float, float]:
-        """누른 키로 정한 (앞, 오른쪽) 입력. 각각 -1, 0, 1. 한계 단계(95%~)에서는 A/D가 뒤바뀐다."""
+        """누른 키로 정한 (앞, 오른쪽) 입력. 각각 -1, 0, 1. 한계 단계(95%~)에서는 ←/→가 뒤바뀐다."""
         held = self.controls.is_held
         ahead = float(held(FORWARD_KEY)) - float(held(BACK_KEY))
         aside = float(held(RIGHT_KEY)) - float(held(LEFT_KEY))  # +가 오른쪽

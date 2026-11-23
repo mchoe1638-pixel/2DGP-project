@@ -12,12 +12,17 @@
 팔 시트는 칸 아래 끝에 그림이 붙어 있어, 걸음으로 올라와도 화면 아래가 비지 않게
 ARMS_SHEET_SINK_PX만큼 내려 그린다 (단색 팔은 그대로).
 땀 단계(50%~)에서는 fx_sweat_hand를 손 위에 겹친다 (그림이 있을 때만, 없으면 생략).
-땀 그림은 팔을 따라 같은 높이에 그린다.
+땀 그림은 팔을 따라 같은 높이에, 같은 선으로 나눠 같이 벌려 그린다.
+
+팔 벌리기: 팔 시트는 두 팔이 한 장에 그려져 있다. 그래서 칸마다 두 팔 사이의 빈 열(ARMS_SPLIT_X)에서
+그림을 둘로 나눠, 왼쪽 조각은 왼쪽으로 오른쪽 조각은 오른쪽으로 ARMS_SPREAD_PX씩 벌려 그린다.
+한쪽 팔만 보이는 칸은 통째로 그쪽으로 밀고, 두 팔이 서로 걸친 arms_hold는 나눌 수 없어 제자리에 그린다.
 
 manifest에 팔 그림이 없으면 단색 팔(흰 소매 끝의 살색 손)을 대신 그린다. 걷고 달릴 때 두 손이 걸음에 맞춰
 엇갈려 오르내리고, 시트가 바뀌면 ARMS_POSE_BLEND_TIME 동안 새 자세로 옮겨 가 손이 튀지 않는다.
 """
 
+import logging
 import math
 from typing import NamedTuple
 
@@ -39,6 +44,8 @@ SWEAT_SHEET = "fx_sweat_hand"
 POSE_FRAMES = 2  # 서기·점프·넘어짐 시트의 칸 수. 단색 팔은 1번 칸에서 둘째 자세를 쓴다
 MISSING_ARMS_NOTE = "대신 단색 팔을 그립니다"
 MISSING_SWEAT_NOTE = "손 땀 그림을 생략합니다"
+
+_log = logging.getLogger(__name__)
 
 
 class ArmPose(NamedTuple):
@@ -62,12 +69,56 @@ def blend_pose(current: ArmPose, target: ArmPose, amount: float) -> ArmPose:
     )
 
 
+def split_offsets(sheet: str, sprite: resource.Sprite) -> tuple[float | None, ...]:
+    """시트의 칸마다 두 팔을 가르는 선을 칸 가운데에서 잰 가로 거리로 돌려준다.
+
+    config.ARMS_SPLIT_X는 칸 왼쪽 끝에서 잰 열이다. 가운데 기준으로 바꿔 두면 칸 폭이 다른
+    그림(땀 그림)에도 같은 선을 쓸 수 있다. 칸 수가 맞지 않으면 팔을 벌리지 않는다.
+    """
+    cuts = config.ARMS_SPLIT_X.get(sheet, ())
+    if len(cuts) != sprite.frames:
+        _log.warning(
+            "%s 은(는) %d칸인데 ARMS_SPLIT_X에는 %d칸이라 팔을 벌리지 않습니다",
+            sheet,
+            sprite.frames,
+            len(cuts),
+        )
+        return (None,) * sprite.frames
+    centre = sprite.frame_w / 2
+    return tuple(None if cut is None else cut - centre for cut in cuts)
+
+
+def draw_spread(
+    sprite: resource.Sprite,
+    x: float,
+    y: float,
+    frame: float,
+    offset: float | None,
+) -> None:
+    """칸을 가운데에서 offset만큼 떨어진 선으로 나눠, 왼쪽 조각은 왼쪽으로 오른쪽 조각은 오른쪽으로 벌려 그린다.
+
+    offset이 None이면 나누지 않고 제자리에 그린다. 선이 칸 끝이거나 밖이면 한쪽 조각만 남아 통째로 민다.
+    """
+    if offset is None:
+        sprite.draw(x, y, frame)
+        return
+    cut = round(sprite.frame_w / 2 + offset)
+    spread = config.ARMS_SPREAD_PX
+    sprite.draw_span(x - spread, y, frame, 0, cut)
+    sprite.draw_span(x + spread, y, frame, cut, sprite.frame_w)
+
+
 class Viewmodel:
     def __init__(self, player: Player, gauge: Gauge) -> None:
         self.player = player
         self.gauge = gauge
         self._sheets = {
             name: resource.find_sprite(name, MISSING_ARMS_NOTE) for name in ARM_SHEETS
+        }
+        self._split = {
+            name: split_offsets(name, sprite)
+            for name, sprite in self._sheets.items()
+            if sprite is not None
         }
         self._sweat = resource.find_sprite(SWEAT_SHEET, MISSING_SWEAT_NOTE)
         self._sweat_frame = 0.0
@@ -121,13 +172,16 @@ class Viewmodel:
         y = config.ARMS_BASE_Y + self.player.bob_y * config.ARMS_BOB_PX_PER_M
         sheet = self.sheet_name()
         sprite = self._sheets[sheet]
+        offset = None  # 단색 팔(과 그 위의 땀 그림)은 나누지 않는다
         if sprite is None:
             self._draw_fallback(x, y)
         else:
             y -= config.ARMS_SHEET_SINK_PX
-            sprite.draw(x, y, self.frame(sheet))
+            frame = self.frame(sheet)
+            offset = self._split[sheet][frame % sprite.frames]
+            draw_spread(sprite, x, y, frame, offset)
         if self._sweat is not None and self.gauge.stage >= GaugeStage.SWEAT:
-            self._sweat.draw(x, y, self._sweat_frame)
+            draw_spread(self._sweat, x, y, self._sweat_frame, offset)
 
     def _draw_fallback(self, x: float, y: float) -> None:
         """단색 팔: 화면 아래 끝에서 올라온 흰 소매 끝에 살색 손. 걸음에 맞춰 두 손이 엇갈려 오르내린다."""
