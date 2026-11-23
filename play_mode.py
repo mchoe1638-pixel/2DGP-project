@@ -5,6 +5,7 @@
 플레이어는 움직일 때마다 카메라(눈)를 자기 위치로 옮기고, 마우스는 카메라의 고개를 돌린다.
 참을성 게이지는 여기서 만들고 매 프레임 흘려보낸다 (플레이어는 단계를 읽기만 한다).
 장애물은 init()에서 스테이지 데이터대로 세우고, 플레이어와의 충돌은 매 프레임 움직인 뒤에 본다.
+같은 방향으로 걸어가는 행인도 함께 세우지만, 이들은 충돌하지 않는 풍경이다.
 
 마우스: 화면에 들어오거나 다시 돌아오면 상대 모드로 잡아 커서를 숨기고, 나가거나 멈추면 풀어 준다.
 움직인 양은 매 프레임 한 번 읽는다 (MOUSEMOTION 이벤트는 쓰지 않는다).
@@ -170,6 +171,7 @@ def init() -> None:
     for spec in stage.deco:
         game_world.add_object(prop.deco_prop(spec, stage), game_world.LAYER_PROP)
     place_obstacles()
+    place_pedestrians()
     sound.play_bgm(music_for(gauge.stage))
     input_state.set_mouse_captured(True)
     fps_meter.restart()
@@ -184,6 +186,12 @@ def place_obstacles() -> None:
     for obj in spawner.spawn_obstacles(stage, player):
         game_world.add_object(obj, game_world.LAYER_OBSTACLE)
         game_world.add_collision_pair(PLAYER_OBSTACLE, None, obj)
+
+
+def place_pedestrians() -> None:
+    """스테이지의 행인을 월드에 세운다. 부딪히지 않으므로 충돌 쌍은 맺지 않는다."""
+    for walker in spawner.spawn_pedestrians(stage, player):
+        game_world.add_object(walker, game_world.LAYER_PROP)
 
 
 def silence_music() -> None:

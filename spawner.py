@@ -1,10 +1,11 @@
-"""스테이지 데이터의 장애물 목록(ObstacleSpec)을 월드에 세울 오브젝트로 만든다.
+"""스테이지 데이터의 장애물·행인 목록을 월드에 세울 오브젝트로 만든다.
 
 오브젝트를 월드에 넣고 충돌 쌍에 등록하는 일은 부르는 쪽(play_mode)이 한다.
 """
 
 import crowd
 import obstacle
+import pedestrian
 import resource
 import stage_data
 from game_object import GameObject
@@ -51,3 +52,11 @@ def spawn_obstacle(
     if spec.y is None:
         raise ValueError(f"{spec.kind}에는 y 위치가 있어야 합니다: x = {spec.x}")
     return [npc_class(spec.x, spec.y, stage.grid, player, sprite_lookup)]
+
+
+def spawn_pedestrians(stage: Stage, player: Player) -> list[GameObject]:
+    """스테이지의 행인 전부. 장애물이 아니라서 충돌 쌍에는 넣지 않는다."""
+    return [
+        pedestrian.Pedestrian(spec.name, spec.x, spec.y, stage.grid, player, index)
+        for index, spec in enumerate(stage.pedestrians)
+    ]

@@ -2,7 +2,7 @@
 
 - 통로 구간은 map_grid.Segment로, 옆 통로는 구간 밖에 더 뚫는 바닥으로 바꿔 격자 지도를 만든다.
 - 기둥은 바닥 칸을 벽으로, 표지판 칸과 골인 문 칸은 그 벽 칸의 텍스처를 바꾼다.
-- 장애물·아이템·장식·개찰구는 배치표(frozen dataclass)로 남긴다. 실제 오브젝트는 플레이 모드가 만든다.
+- 장애물·행인·아이템·장식·개찰구는 배치표(frozen dataclass)로 남긴다. 실제 오브젝트는 플레이 모드가 만든다.
 
 Stage는 만든 뒤 바뀌지 않는다. 같은 번호로 다시 만들면 같은 스테이지가 나온다.
 """
@@ -11,6 +11,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+import config
 import stage_data
 from map_grid import Cell, FloorArea, MapGrid, Segment, build_grid
 
@@ -34,6 +35,15 @@ class ObstacleSpec:
     x: float
     y: float | None
     count: int = 1
+
+
+@dataclass(frozen=True)
+class PedestrianSpec:
+    """행인 한 줄: name 종류가 (x, y)에서 걷기 시작해 +x 쪽으로 걸어간다."""
+
+    name: str
+    x: float
+    y: float
 
 
 @dataclass(frozen=True)
@@ -93,6 +103,7 @@ class Stage:
     gate: GateSpec | None
     goal_door: Cell
     obstacles: tuple[ObstacleSpec, ...]
+    pedestrians: tuple[PedestrianSpec, ...]
     items: tuple[ItemSpec, ...]
     deco: tuple[DecoSpec, ...]
 
@@ -139,6 +150,7 @@ def build_stage(number: int) -> Stage:
         gate=_gate(data.get("gates")),
         goal_door=goal_door,
         obstacles=tuple(_obstacle(row) for row in data.get("obstacles", ())),
+        pedestrians=_pedestrians(data.get("pedestrians", ()), grid),
         items=tuple(_item(row) for row in data.get("items", ())),
         deco=tuple(DecoSpec(*row) for row in data.get("deco", ())),
     )
@@ -197,6 +209,20 @@ def _obstacle(row: Sequence[Any]) -> ObstacleSpec:
         raise ValueError(f"알 수 없는 장애물: {kind}")
     count = int(rest[0]) if rest else 1
     return ObstacleSpec(kind, float(x), None if y is None else float(y), count)
+
+
+def _pedestrians(
+    rows: Sequence[Sequence[Any]], grid: MapGrid
+) -> tuple[PedestrianSpec, ...]:
+    """행인 배치표. 알 수 없는 종류나 벽 안에서 시작하는 행인은 데이터 오류다."""
+    specs: list[PedestrianSpec] = []
+    for name, x, y in rows:
+        if name not in config.PEDESTRIAN_SPEEDS:
+            raise ValueError(f"알 수 없는 행인: {name}")
+        if grid.is_wall(int(x), int(y)):
+            raise ValueError(f"행인 {name}의 자리가 벽 안입니다: x = {x}, y = {y}")
+        specs.append(PedestrianSpec(name, float(x), float(y)))
+    return tuple(specs)
 
 
 def _item(row: Sequence[Any]) -> ItemSpec:
