@@ -144,28 +144,6 @@ class Sprite:
         else:
             image.clip_draw(left, 0, self.frame_w, self.frame_h, x, y, width, height)
 
-    def draw_span(
-        self, x: float, y: float, frame: float, start: int, stop: int
-    ) -> None:
-        """frame번째 칸의 가로 [start, stop)열만 그린다.
-
-        (x, y)는 칸 전체의 중심이다. 그래서 칸을 둘로 나눠 같은 (x, y)로 그리면 draw와 똑같이
-        이어 붙고, x를 서로 다르게 주면 조각이 벌어진다 (1인칭 두 팔 벌리기).
-        """
-        start = max(start, 0)
-        stop = min(stop, self.frame_w)
-        if stop <= start:
-            return
-        left = int(frame) % self.frames * self.frame_w + start
-        self._get_image().clip_draw_to_origin(
-            left,
-            0,
-            stop - start,
-            self.frame_h,
-            snap(x) - self.frame_w / 2 + start,
-            snap(y) - self.frame_h / 2,
-        )
-
     def draw_at_origin(self, x: float, y: float, clip_w: int | None = None) -> None:
         """(x, y)를 왼쪽 아래 모서리로 하여 첫 칸을 그린다. 타일링용(clip_w로 오른쪽을 자른다)."""
         width = self.frame_w if clip_w is None else clip_w

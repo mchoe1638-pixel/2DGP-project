@@ -4,7 +4,7 @@
 get_bb()는 충돌 원기둥 (x, y, 반지름, 아래 z, 위 z) 또는 None(충돌 없음)을 돌려준다.
 """
 
-from game_object import GameObject
+from game_object import Cylinder, GameObject
 
 LAYER_BACKGROUND = 0
 LAYER_PROP = 1
@@ -71,21 +71,26 @@ def add_collision_pair(
         sides[1].append(right)
 
 
-def collide(a: GameObject, b: GameObject) -> bool:
+def cylinders_overlap(a: Cylinder, b: Cylinder) -> bool:
     """두 원기둥이 겹치는지: 바닥 위 거리가 반지름의 합보다 짧고 높이 구간도 겹쳐야 한다.
 
     맞닿기만 한 것(거리가 반지름의 합과 같거나 한쪽 바닥이 다른 쪽 꼭대기와 같음)은 겹침이 아니다.
     """
-    cylinder_a = a.get_bb()
-    cylinder_b = b.get_bb()
-    if cylinder_a is None or cylinder_b is None:
-        return False
-    x_a, y_a, radius_a, bottom_a, top_a = cylinder_a
-    x_b, y_b, radius_b, bottom_b, top_b = cylinder_b
+    x_a, y_a, radius_a, bottom_a, top_a = a
+    x_b, y_b, radius_b, bottom_b, top_b = b
     reach = radius_a + radius_b
     if (x_a - x_b) ** 2 + (y_a - y_b) ** 2 >= reach * reach:
         return False
     return bottom_a < top_b and bottom_b < top_a
+
+
+def collide(a: GameObject, b: GameObject) -> bool:
+    """두 오브젝트의 충돌 원기둥이 겹치는지. 충돌하지 않는(get_bb가 None인) 쪽이 있으면 False."""
+    cylinder_a = a.get_bb()
+    cylinder_b = b.get_bb()
+    if cylinder_a is None or cylinder_b is None:
+        return False
+    return cylinders_overlap(cylinder_a, cylinder_b)
 
 
 def handle_collisions() -> None:

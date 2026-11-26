@@ -12,6 +12,8 @@
 - 몸은 반지름 PLAYER_RADIUS의 원이다. 벽에 막히면 x·y축을 따로 밀어 벽을 따라 미끄러지고
   (map_grid.MapGrid.move_and_slide), 막힌 축의 속도는 0이 된다. 그 축으로 WALL_BUMP_SPEED 이상이었으면 쿵 소리.
   방해물과의 충돌은 발에서 PLAYER_HEIGHT까지 선 원기둥(get_bb)으로 game_world가 검사한다.
+  기둥·벤치 같은 막는 장식에 파고들면 stand_clear_of로 벽처럼 밀려 나온다 (넘어지거나 멈추지 않는다).
+  밀려 나오는 속도는 PROP_SHOVE_SPEED까지라, 벤치 위로 뛰다 깊이 내려앉아도 순간이동하지 않고 몇 프레임에 걸쳐 나온다.
 - SPACE: 땅에 서 있고 멈춰 있지 않을 때 JUMP_V로 뛴다. 공중에서는 GRAVITY로 떨어진다.
 
 상태: 서기(IDLE) < IDLE_SPEED_MAX ≤ 걷기(WALK) < RUN_SPEED_MIN ≤ 달리기(RUN),
@@ -37,6 +39,7 @@ from game_object import Cylinder, GameObject
 from gauge import Gauge, GaugeStage
 from input_state import InputState
 from stage import Stage
+from util import separation, unit_vector
 
 FORWARD_KEY = SDLK_w
 BACK_KEY = SDLK_s
@@ -358,6 +361,35 @@ class Player(GameObject):
             config.PLAYER_RADIUS,
         )
         self.x, self.y = moved.x, moved.y
+
+    def stand_clear_of(self, center_x: float, center_y: float, min_dist: float) -> None:
+        """몸 중심이 (center_x, center_y)에서 min_dist 안으로 파고들었으면 바깥으로 밀려 나온다.
+
+        벽과 같게 막는다: 가까운 벽이 있으면 거기까지만 밀리고, 파고들던 쪽의 속도는 0이 되며
+        (옆으로 미끄러지는 속도는 그대로), 그 속도가 WALL_BUMP_SPEED 이상이었으면 쿵 소리가 난다.
+        한 프레임에 밀리는 거리는 PROP_SHOVE_SPEED × frame_time까지다: 달려와 부딪힌 얕은 파고듦은 그 프레임에
+        다 나오고, 벤치 위로 뛰다 깊이 내려앉은 것만 몇 프레임에 걸쳐 나온다 (한 번에 순간이동하지 않는다).
+        눈이 한 프레임 늦지 않게 카메라도 다시 맞춘다.
+        """
+        away_x, away_y = separation(self.x, self.y, center_x, center_y, min_dist)
+        if away_x == 0.0 and away_y == 0.0:
+            return
+        normal_x, normal_y = unit_vector(away_x, away_y)
+        max_push = config.PROP_SHOVE_SPEED * game_framework.frame_time
+        # 깊이 파고들었으면 한 프레임에 다 밀지 않고 몇 프레임에 나눠 민다 (방향은 그대로, 길이만 줄인다)
+        if math.hypot(away_x, away_y) > max_push:
+            away_x, away_y = normal_x * max_push, normal_y * max_push
+        moved = self.stage.grid.move_and_slide(
+            self.x, self.y, away_x, away_y, config.PLAYER_RADIUS
+        )
+        self.x, self.y = moved.x, moved.y
+        into = -(self.vx * normal_x + self.vy * normal_y)  # 원 쪽으로 파고들던 속도
+        if into > 0.0:
+            if into >= config.WALL_BUMP_SPEED:
+                sound.play_sfx(sound.BUMP)
+            self.vx += normal_x * into
+            self.vy += normal_y * into
+        self._place_camera()
 
     def fall(self) -> None:
         """넘어진다: FALL_STOP_TIME 멈춤, 게이지 +FALL_GAUGE_ADD, 넘어지는 소리. 눈이 바닥 가까이로 내려간다."""

@@ -2,8 +2,10 @@
 
 통로 폭 전체를 사람들이 줄지어 막는다 (한 줄이 CROWD_LANE_MAX 이하라 몸 사이로 비집고 지날 수
 없다). 닿으면 가던 방향의 반대로 밀려난다 (속력이 FALL_SPEED 이상이었으면 넘어지기까지 한다).
-2.5초 주기의 마지막 1초 동안은 한 줄에 틈이 열려서, 그 줄의 사람은 충돌이 꺼지고 벽 쪽으로 비켜선다.
-틈이 열리는 줄은 주기마다 양 끝에서 번갈아 안쪽으로 옮겨 간다. 인파는 월드에서 사라지지 않는다.
+CROWD_GAP_PERIOD 주기의 마지막 CROWD_GAP_OPEN_TIME 동안은 한 줄에 틈이 열려서, 그 줄의 사람은
+충돌이 꺼지고 벽 쪽으로 비켜선다. 틈은 주기마다 바로 옆 줄로 옮겨 간다 (한쪽 끝에서 반대쪽 끝까지
+훑고 되돌아온다). 틈이 닫히려는 순간 플레이어가 아직 그 사람 몸 안이면 CROWD_GAP_GRACE까지
+닫기를 미뤄 준다. 인파는 월드에서 사라지지 않는다.
 
 사람 한 명이 CrowdMember 오브젝트이고, 틈을 돌리는 시계는 보이지도 부딪히지도 않는 Crowd 오브젝트다.
 """
@@ -13,6 +15,7 @@ from collections.abc import Sequence
 
 import config
 import game_framework
+import game_world
 import resource
 import sound
 from game_object import Billboard, Cylinder, GameObject, natural_height
@@ -27,6 +30,7 @@ COMMUTER_SHEETS = (
     "npc_commuter3_front",
 )
 CLOSED_TIME = config.CROWD_GAP_PERIOD - config.CROWD_GAP_OPEN_TIME  # 주기 중 닫힌 시간
+HOLD_AT = config.CROWD_GAP_PERIOD - config.CROWD_GAP_EASE  # 닫히기 시작하는 때
 
 
 def gap_openness(into: float) -> float:
@@ -40,24 +44,19 @@ def gap_openness(into: float) -> float:
 
 
 def open_order(lanes: int) -> tuple[int, ...]:
-    """틈이 열리는 줄의 차례: 양 끝에서 번갈아 안쪽으로 (0, 끝, 1, 끝 - 1, ...)."""
-    order: list[int] = []
-    low, high = 0, lanes - 1
-    while low <= high:
-        order.append(low)
-        if low != high:
-            order.append(high)
-        low, high = low + 1, high - 1
-    return tuple(order)
+    """틈이 열리는 줄의 차례: 한쪽 끝에서 반대쪽 끝까지 훑고 되돌아온다 (0, 1, ..., 끝, ..., 2, 1).
+
+    다음 틈이 늘 바로 옆 줄이라서, 플레이어가 틈이 옮겨 가는 쪽을 미리 보고 따라갈 수 있다.
+    """
+    return (*range(lanes), *range(lanes - 2, 0, -1))
 
 
 def aside_y(home_y: float, y_min: float, y_max: float) -> float:
     """틈이 열릴 때 비켜서는 자리: 더 가까운 벽 쪽으로 CROWD_GAP_SHIFT만큼 (벽에 박히지 않게)."""
     toward_low = home_y - y_min <= y_max - home_y
     shift = -config.CROWD_GAP_SHIFT if toward_low else config.CROWD_GAP_SHIFT
-    return clamp(
-        y_min + config.CROWD_RADIUS, home_y + shift, y_max - config.CROWD_RADIUS
-    )
+    margin = config.CROWD_WALL_MARGIN
+    return clamp(y_min + margin, home_y + shift, y_max - margin)
 
 
 class CrowdMember(GameObject):
@@ -92,10 +91,21 @@ class CrowdMember(GameObject):
         self.passable = passable
 
     # ------------------------------------------------------------ 충돌
+    def body(self) -> Cylinder:
+        """닫혀 있을 때 서 있는 몸통. 틈이 열려 비켜서 있어도 늘 제자리(home_y)를 가리킨다."""
+        return (self.x, self.home_y, config.CROWD_RADIUS, 0.0, config.CROWD_HEIGHT)
+
     def get_bb(self) -> Cylinder | None:
         if self.passable:
-            return None  # 닫혀 있는 동안은 제자리(home_y)에 서 있으므로 y는 home_y다
-        return (self.x, self.home_y, config.CROWD_RADIUS, 0.0, config.CROWD_HEIGHT)
+            return None
+        return self.body()
+
+    def holds_player(self) -> bool:
+        """틈이 지금 닫히면 플레이어가 이 사람 몸에 끼는가."""
+        player_body = self.player.get_bb()
+        if player_body is None:
+            return False
+        return game_world.cylinders_overlap(self.body(), player_body)
 
     def handle_collision(self, group: str, other: GameObject) -> None:
         if group != PLAYER_OBSTACLE or other is not self.player or self.passable:
@@ -139,13 +149,36 @@ class Crowd(GameObject):
         self.members = tuple(members)
         self._order = open_order(len(self.members))
         self._time = 0.0  # 틈이 닫힌 채로 시작한다
+        # 틈이 닫히기를 미루며 기다린 시간(초). 0보다 크면 지금 기다리는 중이다
+        self._held = 0.0
+
+    def _opener(self, cycle: float) -> CrowdMember:
+        """그 주기에 틈이 열리는 사람."""
+        return self.members[self._order[int(cycle) % len(self._order)]]
+
+    def _advance(self, dt: float) -> None:
+        """시계를 dt초 돌린다. 틈이 닫히려는 순간 플레이어가 아직 틈 안이면 GRACE초까지 멈춰 준다."""
+        cycle, into = divmod(self._time, config.CROWD_GAP_PERIOD)
+        reaching_close = into < HOLD_AT <= into + dt
+        waiting = self._held > 0.0
+        if (
+            (reaching_close or waiting)
+            and self._held < config.CROWD_GAP_GRACE
+            and self._opener(cycle).holds_player()
+        ):
+            self._held += dt
+            # 시계를 닫히기 직전에 세워 둔다: 그 사람은 활짝 비킨 채로 기다린다
+            self._time = cycle * config.CROWD_GAP_PERIOD + HOLD_AT
+            return
+        self._held = 0.0
+        self._time += dt
 
     def step(self, dt: float) -> None:
-        self._time += dt
+        self._advance(dt)
         cycle, into = divmod(self._time, config.CROWD_GAP_PERIOD)
-        opening = self._order[int(cycle) % len(self._order)]
-        for index, member in enumerate(self.members):
-            if index == opening:
+        opener = self._opener(cycle)
+        for member in self.members:
+            if member is opener:
                 member.apply_gap(gap_openness(into), into >= CLOSED_TIME)
             else:
                 member.apply_gap(0.0, False)

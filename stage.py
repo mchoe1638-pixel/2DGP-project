@@ -1,13 +1,14 @@
 """스테이지: 원본 데이터(stage_data.py)를 격자 지도와 배치표로 바꾼다.
 
 - 통로 구간은 map_grid.Segment로, 옆 통로는 구간 밖에 더 뚫는 바닥으로 바꿔 격자 지도를 만든다.
-- 기둥은 바닥 칸을 벽으로, 표지판 칸과 골인 문 칸은 그 벽 칸의 텍스처를 바꾼다.
-- 장애물·행인·아이템·장식·개찰구는 배치표(frozen dataclass)로 남긴다. 실제 오브젝트는 플레이 모드가 만든다.
+- 기둥은 바닥 칸을 벽으로, 벽 무늬·끝벽·표지판 칸과 골인 문 칸은 그 벽 칸의 텍스처를 바꾼다.
+- 장애물·행인·승강장 기둥·벤치·아이템·장식·개찰구는 배치표(frozen dataclass)로 남긴다.
+  실제 오브젝트는 플레이 모드가 만든다.
 
 Stage는 만든 뒤 바뀌지 않는다. 같은 번호로 다시 만들면 같은 스테이지가 나온다.
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -40,6 +41,15 @@ class ObstacleSpec:
 @dataclass(frozen=True)
 class PedestrianSpec:
     """행인 한 줄: name 종류가 (x, y)에서 걷기 시작해 +x 쪽으로 걸어간다."""
+
+    name: str
+    x: float
+    y: float
+
+
+@dataclass(frozen=True)
+class PropSpec:
+    """몸으로 막는 장식 한 줄: name 그림(기둥·벤치)이 (x, y)에 서 있다."""
 
     name: str
     x: float
@@ -103,6 +113,7 @@ class Stage:
     gate: GateSpec | None
     goal_door: Cell
     obstacles: tuple[ObstacleSpec, ...]
+    props: tuple[PropSpec, ...]
     pedestrians: tuple[PedestrianSpec, ...]
     items: tuple[ItemSpec, ...]
     deco: tuple[DecoSpec, ...]
@@ -131,7 +142,10 @@ def build_stage(number: int) -> Stage:
         )
     )
     goal_door: Cell = tuple(data["goal_door"])  # type: ignore[assignment]
-    overrides = _sign_cells(data.get("wall_signs", ()), segments)
+    # 덮어쓰는 순서: 벽 무늬 → 끝벽 → 표지판 → 골인 문 (나중 것이 이긴다)
+    overrides = _run_cells(data.get("wall_runs", ()), segments)
+    overrides.update(_end_wall_cells(data.get("end_wall", ()), segments))
+    overrides.update(_sign_cells(data.get("wall_signs", ()), segments))
     overrides[goal_door] = stage_data.TEX_DOOR_WC
     pillars = [tuple(cell) for cell in data.get("pillars", ())]
     grid = build_grid(segments, extra_floors, pillars, overrides)  # type: ignore[arg-type]
@@ -150,6 +164,7 @@ def build_stage(number: int) -> Stage:
         gate=_gate(data.get("gates")),
         goal_door=goal_door,
         obstacles=tuple(_obstacle(row) for row in data.get("obstacles", ())),
+        props=_props(data.get("props", ()), grid),
         pedestrians=_pedestrians(data.get("pedestrians", ()), grid),
         items=tuple(_item(row) for row in data.get("items", ())),
         deco=tuple(DecoSpec(*row) for row in data.get("deco", ())),
@@ -179,18 +194,54 @@ def _side_passage(
     return SidePassage(x0, x1, host.y0 - width, host.y0, side)
 
 
+def _wall_row(segment: Segment, side: str) -> int:
+    """구간의 왼벽(y1 줄) 또는 오른벽(y0 - 1 줄)의 y."""
+    if side not in SIDES:
+        raise ValueError(f"벽 방향은 {SIDES} 중 하나여야 합니다: {side}")
+    return segment.y1 if side == stage_data.SIDE_LEFT else segment.y0 - 1
+
+
 def _sign_cells(
     rows: Sequence[tuple[int, str]], segments: Sequence[Segment]
 ) -> dict[Cell, str]:
     """표지판 자리 (x, 왼쪽/오른쪽) → 그 x 구간의 왼벽(y1 줄)·오른벽(y0 - 1 줄) 칸."""
     cells: dict[Cell, str] = {}
     for x, side in rows:
-        if side not in SIDES:
-            raise ValueError(f"표지판 방향은 {SIDES} 중 하나여야 합니다: {side}")
-        segment = _segment_for(x, segments)
-        row = segment.y1 if side == stage_data.SIDE_LEFT else segment.y0 - 1
+        row = _wall_row(_segment_for(x, segments), side)
         cells[(int(x), row)] = stage_data.TEX_WALL_SIGN_WC
     return cells
+
+
+def _run_cells(
+    rows: Sequence[tuple[str, int, int, Sequence[str]]], segments: Sequence[Segment]
+) -> dict[Cell, str]:
+    """벽 무늬 (방향, x0, x1, 무늬) → [x0, x1) 칸의 벽 칸마다 깔 텍스처. 무늬는 x0 칸부터 되풀이한다."""
+    cells: dict[Cell, str] = {}
+    for side, x0, x1, pattern in rows:
+        if not pattern:
+            raise ValueError(f"벽 무늬가 비어 있습니다: x = {x0} ~ {x1}")
+        for x in range(int(x0), int(x1)):
+            row = _wall_row(_segment_for(x, segments), side)
+            cells[(x, row)] = pattern[(x - int(x0)) % len(pattern)]
+    return cells
+
+
+def _end_wall_cells(
+    textures: Sequence[str], segments: Sequence[Segment]
+) -> dict[Cell, str]:
+    """끝벽(마지막 구간의 x1 줄) 조각 → 칸. 조각은 보이는 대로 왼쪽부터이고 +y가 왼쪽이다."""
+    if not textures:
+        return {}
+    last = segments[-1]
+    width = last.y1 - last.y0
+    if len(textures) != width:
+        raise ValueError(
+            f"끝벽 조각은 통로 폭과 같은 {width}개여야 합니다: {len(textures)}개"
+        )
+    return {
+        (last.x1, last.y1 - 1 - index): texture
+        for index, texture in enumerate(textures)
+    }
 
 
 def _gate(raw: Mapping[str, Any] | None) -> GateSpec | None:
@@ -211,18 +262,35 @@ def _obstacle(row: Sequence[Any]) -> ObstacleSpec:
     return ObstacleSpec(kind, float(x), None if y is None else float(y), count)
 
 
+def _named_places(
+    rows: Sequence[Sequence[Any]],
+    grid: MapGrid,
+    known: Collection[str],
+    label: str,
+) -> list[tuple[str, float, float]]:
+    """(이름, x, y) 줄을 검사해 돌려준다. 알 수 없는 이름이나 벽 안의 자리는 데이터 오류다."""
+    places: list[tuple[str, float, float]] = []
+    for name, x, y in rows:
+        if name not in known:
+            raise ValueError(f"알 수 없는 {label}: {name}")
+        if grid.is_wall(int(x), int(y)):
+            raise ValueError(f"{label} {name}의 자리가 벽 안입니다: x = {x}, y = {y}")
+        places.append((name, float(x), float(y)))
+    return places
+
+
 def _pedestrians(
     rows: Sequence[Sequence[Any]], grid: MapGrid
 ) -> tuple[PedestrianSpec, ...]:
-    """행인 배치표. 알 수 없는 종류나 벽 안에서 시작하는 행인은 데이터 오류다."""
-    specs: list[PedestrianSpec] = []
-    for name, x, y in rows:
-        if name not in config.PEDESTRIAN_SPEEDS:
-            raise ValueError(f"알 수 없는 행인: {name}")
-        if grid.is_wall(int(x), int(y)):
-            raise ValueError(f"행인 {name}의 자리가 벽 안입니다: x = {x}, y = {y}")
-        specs.append(PedestrianSpec(name, float(x), float(y)))
-    return tuple(specs)
+    """행인 배치표. 이름은 config.PEDESTRIAN_SPEEDS의 키여야 한다."""
+    places = _named_places(rows, grid, config.PEDESTRIAN_SPEEDS, "행인")
+    return tuple(PedestrianSpec(*place) for place in places)
+
+
+def _props(rows: Sequence[Sequence[Any]], grid: MapGrid) -> tuple[PropSpec, ...]:
+    """승강장 기둥·벤치 배치표. 이름은 config.SOLID_PROP_COLLIDERS의 키여야 한다."""
+    places = _named_places(rows, grid, config.SOLID_PROP_COLLIDERS, "막는 장식")
+    return tuple(PropSpec(*place) for place in places)
 
 
 def _item(row: Sequence[Any]) -> ItemSpec:

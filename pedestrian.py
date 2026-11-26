@@ -1,6 +1,8 @@
 """행인: 플레이어와 같은 방향(+x)을 보고 걸어가는 배경 사람.
 
-장애물이 아니라 길 풍경이다. 충돌 몸체가 없어서 부딪히지 않고, 효과도 없고, 미니맵에도 나오지 않는다.
+장애물이 아니라 길 풍경이다. 충돌 몸체가 없어서 플레이어와 부딪히지 않고, 효과도 없고, 미니맵에도
+나오지 않는다. 다만 승강장의 기둥·벤치(blockers)는 걸을 때 비껴 간다: 파고들면 바깥으로 밀려 나와
+그 둘레를 미끄러져 돈다.
 플레이어가 뒤로 PEDESTRIAN_WAKE_DIST 안에 올 때까지는 선 채로 있다가, 그때부터 종류마다 정해진
 속도로 +x 쪽으로 걷는다. PEDESTRIAN_WALK_DISTANCE만큼 걸으면 그 자리에 서고, 플레이어에게서
 PEDESTRIAN_FADE_NEAR 넘게 떨어졌을 때 서서히 사라진다(눈앞에서는 사라지지 않는다). 걸음은 모두
@@ -11,6 +13,7 @@ PEDESTRIAN_FADE_NEAR 넘게 떨어졌을 때 서서히 사라진다(눈앞에서
 """
 
 import math
+from collections.abc import Sequence
 
 import config
 import game_framework
@@ -19,6 +22,7 @@ import resource
 from game_object import Billboard, GameObject, natural_height
 from map_grid import MapGrid
 from player import Player
+from prop import SolidProp
 from resource import Sprite
 
 BACK_MISSING = "앞모습 그림으로 대신 그린다"  # 뒷모습 그림이 manifest에 없을 때 로그에 적는 대신 하는 일
@@ -43,12 +47,14 @@ class Pedestrian(GameObject):
         grid: MapGrid,
         player: Player,
         index: int = 0,
+        blockers: Sequence[SolidProp] = (),
     ) -> None:
         self.name = name
         self.x = float(x)
         self.y = float(y)
         self.grid = grid
         self.player = player
+        self.blockers = tuple(blockers)  # 비껴 가야 하는 기둥·벤치
         self.alpha = 1.0
         self._speed = config.PEDESTRIAN_SPEEDS[name]
         self._body = walker_sheet(name)
@@ -79,17 +85,29 @@ class Pedestrian(GameObject):
         return away >= config.PEDESTRIAN_FADE_NEAR
 
     def _walk(self, dt: float) -> None:
-        """+x 쪽으로 걷고, 다 걸었으면 선다. 벽에 막히면 미끄러지고 발도 멈춘다."""
+        """+x 쪽으로 걷고, 다 걸었으면 선다. 벽이나 기둥·벤치에 막히면 미끄러지고 발도 멈춘다."""
         walking = self._walked < config.PEDESTRIAN_WALK_DISTANCE
         ahead = self._speed * dt if walking else 0.0
         moved = self.grid.move_and_slide(
             self.x, self.y, ahead, self._sidestep(dt), config.NPC_RADIUS
         )
-        travelled = math.hypot(moved.x - self.x, moved.y - self.y)  # 실제로 움직인 거리
-        self.x, self.y = moved.x, moved.y
-        self._walked += ahead  # 벽에 막혀도 가려던 만큼 센다
+        x, y = self._clear_of_blockers(moved.x, moved.y)
+        travelled = math.hypot(x - self.x, y - self.y)  # 실제로 움직인 거리
+        self.x, self.y = x, y
+        self._walked += ahead  # 막혀도 가려던 만큼 센다
         steps = travelled / config.PEDESTRIAN_STRIDE
         self.frame = (self.frame + steps) % self._body.frames
+
+    def _clear_of_blockers(self, x: float, y: float) -> tuple[float, float]:
+        """(x, y)가 기둥·벤치 안으로 파고들었으면 바깥으로 민 자리 (벽 앞이면 거기까지만)."""
+        for blocker in self.blockers:
+            push_x, push_y = blocker.push_out(x, y, config.NPC_RADIUS)
+            if push_x != 0.0 or push_y != 0.0:
+                pushed = self.grid.move_and_slide(
+                    x, y, push_x, push_y, config.NPC_RADIUS
+                )
+                x, y = pushed.x, pushed.y
+        return x, y
 
     def _sidestep(self, dt: float) -> float:
         """뒤에서 플레이어가 가까이 다가오면 그 줄에서 벗어나는 옆걸음(m). 평소에는 0."""

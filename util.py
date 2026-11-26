@@ -21,6 +21,21 @@ def unit_vector(
     return dx / length, dy / length
 
 
+def separation(
+    x: float, y: float, cx: float, cy: float, min_dist: float
+) -> tuple[float, float]:
+    """(x, y)가 원 (cx, cy)에서 min_dist 안에 있으면, 중심에서 멀어져 min_dist가 되게 하는 움직임 (dx, dy).
+
+    이미 바깥이면 (0, 0). 중심에 딱 겹쳐 방향이 없으면 -x 쪽(스테이지를 거슬러 온 쪽)으로 민다.
+    """
+    gap = math.hypot(x - cx, y - cy)
+    if gap >= min_dist:
+        return 0.0, 0.0
+    away_x, away_y = unit_vector(x - cx, y - cy, fallback=(-1.0, 0.0))
+    reach = min_dist - gap
+    return away_x * reach, away_y * reach
+
+
 def snap(value: float) -> int:
     """그리기 좌표를 정수 픽셀로 반올림한다 (0.5는 올림)."""
     return math.floor(value + 0.5)

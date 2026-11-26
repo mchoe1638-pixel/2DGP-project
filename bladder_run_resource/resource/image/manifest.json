@@ -169,37 +169,37 @@
  },
  "arms_idle": {
   "file": "resource/image/arms/arms_idle.png",
-  "frame_w": 480,
+  "frame_w": 1260,
   "frame_h": 300,
   "frames": 2
  },
  "arms_walk": {
   "file": "resource/image/arms/arms_walk.png",
-  "frame_w": 480,
+  "frame_w": 1260,
   "frame_h": 300,
   "frames": 4
  },
  "arms_run": {
   "file": "resource/image/arms/arms_run.png",
-  "frame_w": 480,
+  "frame_w": 1260,
   "frame_h": 300,
   "frames": 4
  },
  "arms_jump": {
   "file": "resource/image/arms/arms_jump.png",
-  "frame_w": 480,
+  "frame_w": 1260,
   "frame_h": 300,
   "frames": 2
  },
  "arms_hold": {
   "file": "resource/image/arms/arms_hold.png",
-  "frame_w": 480,
+  "frame_w": 1260,
   "frame_h": 300,
   "frames": 4
  },
  "arms_fall": {
   "file": "resource/image/arms/arms_fall.png",
-  "frame_w": 480,
+  "frame_w": 1260,
   "frame_h": 300,
   "frames": 2
  },
@@ -274,6 +274,42 @@
   "frame_w": 144,
   "frame_h": 144,
   "frames": 2
+ },
+ "npc_commuter1_back": {
+  "file": "resource/image/npc/npc_commuter1_back.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4
+ },
+ "npc_commuter2_back": {
+  "file": "resource/image/npc/npc_commuter2_back.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4
+ },
+ "npc_commuter3_back": {
+  "file": "resource/image/npc/npc_commuter3_back.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4
+ },
+ "npc_commuter4_back": {
+  "file": "resource/image/npc/npc_commuter4_back.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4
+ },
+ "npc_commuter5_back": {
+  "file": "resource/image/npc/npc_commuter5_back.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4
+ },
+ "npc_traveler_back": {
+  "file": "resource/image/npc/npc_traveler_back.png",
+  "frame_w": 144,
+  "frame_h": 144,
+  "frames": 4
  },
  "item_breath": {
   "file": "resource/image/item/item_breath.png",
@@ -453,6 +489,150 @@
   "file": "resource/image/bg/bg_train_inside.png",
   "frame_w": 1280,
   "frame_h": 720,
+  "frames": 1
+ },
+ "tex_wall_tile": {
+  "file": "resource/image/station/tex_wall_tile.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wall_ad": {
+  "file": "resource/image/station/tex_wall_ad.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wall_stairs": {
+  "file": "resource/image/station/tex_wall_stairs.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wall_sign_wc": {
+  "file": "resource/image/station/tex_wall_sign_wc.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_psd_door_l": {
+  "file": "resource/image/station/tex_psd_door_l.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_psd_door_r": {
+  "file": "resource/image/station/tex_psd_door_r.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_psd_panel": {
+  "file": "resource/image/station/tex_psd_panel.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_psd_train_l": {
+  "file": "resource/image/station/tex_psd_train_l.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_psd_train_r": {
+  "file": "resource/image/station/tex_psd_train_r.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_rail": {
+  "file": "resource/image/station/tex_rail.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_station_sign_1": {
+  "file": "resource/image/station/tex_station_sign_1.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_station_sign_2": {
+  "file": "resource/image/station/tex_station_sign_2.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_station_sign_3": {
+  "file": "resource/image/station/tex_station_sign_3.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_end_1": {
+  "file": "resource/image/station/tex_wc_end_1.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_end_2": {
+  "file": "resource/image/station/tex_wc_end_2.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_end_3": {
+  "file": "resource/image/station/tex_wc_end_3.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_end_5": {
+  "file": "resource/image/station/tex_wc_end_5.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_end_6": {
+  "file": "resource/image/station/tex_wc_end_6.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_end_7": {
+  "file": "resource/image/station/tex_wc_end_7.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_wc_tile": {
+  "file": "resource/image/station/tex_wc_tile.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 1
+ },
+ "tex_door_wc": {
+  "file": "resource/image/station/tex_door_wc.png",
+  "frame_w": 96,
+  "frame_h": 288,
+  "frames": 2
+ },
+ "prop_bench": {
+  "file": "resource/image/station/prop_bench.png",
+  "frame_w": 120,
+  "frame_h": 48,
+  "frames": 1
+ },
+ "prop_pillar_pink": {
+  "file": "resource/image/station/prop_pillar_pink.png",
+  "frame_w": 48,
+  "frame_h": 216,
+  "frames": 1
+ },
+ "prop_gate_front": {
+  "file": "resource/image/station/prop_gate_front.png",
+  "frame_w": 384,
+  "frame_h": 144,
   "frames": 1
  }
 }
